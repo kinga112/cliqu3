@@ -7,9 +7,6 @@ import './App.css'
 import Login from './screens/Login';
 // import Home from './screens/Home';
 // import { useEffect, useState } from 'react';
-import { RxDB } from './rxdb';
-import { _db, _push } from './screens/globalState';
-import { useHookstate } from '@hookstate/core';
 // import { ethers } from 'ethers';
 // import path from 'path';
 // import { CONSTANTS, PushAPI } from '@pushprotocol/restapi';
@@ -17,13 +14,16 @@ import { useHookstate } from '@hookstate/core';
 import { Push } from './push';
 import Invite from './screens/Invite';
 import Login2 from './screens/Login2';
-import { CacheDB } from './cache';
+// import { CacheDB } from './cache';
 import { createServer } from './gun';
+import { cache2, CacheDB2 } from './dexie'
 // import { Peerbit } from 'peerbit';
 
-export const rxdb = new RxDB;
+// export const rxdb = new RxDB;
 export const push = new Push;
-export const cache = new CacheDB;
+// export const cache = new CacheDB;
+// export const cache2 = new CacheDB2();
+
 // export const peer = await Peerbit.create();
 
 export default function App() {
@@ -62,7 +62,7 @@ export default function App() {
   //   }
   // };
 
-  console.log("RXDB: " + rxdb)
+  // console.log("RXDB: " + rxdb)
   
   return (
       <Login2/>

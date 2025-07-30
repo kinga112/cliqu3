@@ -1,14 +1,15 @@
 import React from 'react';
 import { XEmbed, YouTubeEmbed, TikTokEmbed, PinterestEmbed, FacebookEmbed } from 'react-social-media-embed';
-import { Spotify } from 'react-spotify-embed'
+// import { Spotify } from 'react-spotify-embed'
 
 // function LinkPreview(props: {url: string}){
-  interface LinkPreviewProps {
-    url: string;
-  }
-  
-  // Memoized functional component using React.memo
-  const LinkPreview: React.FC<LinkPreviewProps> = React.memo(({ url }) => {
+interface LinkPreviewProps {
+  url: string;
+}
+
+// Memoized functional component using React.memo
+// const LinkPreview: React.FC<LinkPreviewProps> = React.memo(({ url }) => {
+const LinkPreview: React.FC<LinkPreviewProps> = React.memo(({ url }) => {
   if(url.includes('open.spotify.com/')){
     const code = url.split('open.spotify.com/')[1]
     const embedUrl = `https://open.spotify.com/embed/${code}?utm_source=generator`

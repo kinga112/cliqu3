@@ -1,14 +1,15 @@
 // Import Push SDK & Ethers
 // import { PushAPI, CONSTANTS } from '@pushprotocol/restapi';
 import { ethers } from 'ethers';
-import { _db } from './screens/globalState';
 import { RxDocument } from 'rxdb';
 // import { peer, rxdb } from './App';
 import { CONSTANTS, PushAPI, SignerType } from '@pushprotocol/restapi/src';
-import { Msg, useServerStore, useUserStore } from './state-management/store';
+import { useServerStore, useUserStore } from './state-management/store';
 import { MessageType } from '@pushprotocol/restapi/src/lib/constants';
 // import { ServersDB, Server } from './peerbit';
-import { gun, TextChannel, VoiceChannel } from './gun';
+import { gun } from './gun';
+import EthereumProvider from '@walletconnect/ethereum-provider';
+import { TextChannel, VoiceChannel } from './types/serverTypes';
 
 // const signer = ethers.Wallet.createRandom();
 
@@ -26,16 +27,47 @@ export class Push {
     this.user = user
     console.log("USER ACOUNT: " + this.user.account)
   }
+
+  async initSavedUser(signer: ethers.providers.JsonRpcSigner, decryptedPGPKey: string, address: string){
+    this.user = await PushAPI.initialize(signer, {
+      decryptedPGPPrivateKey: decryptedPGPKey,
+      env: CONSTANTS.ENV.STAGING, // or your app's environment
+      account: address,
+    });
+    console.log("SAVED USER: ", this.user.account)
+  }
+
   // async initUser(signer: ethers.Wallet){
-  async initUser(signer: ethers.Wallet | ethers.providers.JsonRpcSigner){
+  async initUser(signer: ethers.Wallet | ethers.providers.JsonRpcSigner, decryptedPGPKey?: string){
     // const signer = ethers.Wallet.fromMnemonic("stadium chase abuse leg monitor uncle pledge category flip luxury antenna extra", "m/44'/60'/0'/0/0")
     // const signer = ethers.Wallet.fromMnemonic("stem still jacket screen skill hip ice impulse wasp dice kidney border", "m/44'/60'/0'/0/0")
     // console.log("init user: " + JSON.stringify(signer.mnemonic))
     // let newSigner: SignerType;
     // newSigner = ethersV5SignerType
-    this.user = await PushAPI.initialize(signer, {
-      env: CONSTANTS.ENV.STAGING,
-    });
+    if(decryptedPGPKey){
+      // console.log("GOT PGP KEY: ", decryptedPGPKey)
+      this.user = await PushAPI.initialize(signer, {
+        decryptedPGPPrivateKey: decryptedPGPKey,
+        // env: appConfig.appEnv,
+        env: CONSTANTS.ENV.STAGING,
+        account: localStorage.getItem('account'),
+        // progressHook: onboardingProgressReformatter,
+        // alpha: { feature: ['SCALABILITY_V2'] },
+      });
+      console.log("USER...: ", this.user)
+    }else{
+      this.user = await PushAPI.initialize(signer, {
+        env: CONSTANTS.ENV.STAGING,
+      });
+      console.log("KEY: ", this.user.decryptedPgpPvtKey!)
+      localStorage.setItem('saved-user', this.user.decryptedPgpPvtKey!)
+      localStorage.setItem('address', this.user.account)
+    }
+
+    // const web3Provider = new ethers.providers.Web3Provider(wallet.provider, 'any');
+
+    // const librarySigner = web3Provider?.getSigner(currentAddress);
+    
     // console.log("THIS USER: " + this.user.account)
     // console.log("USER PROFILE: yeah : " + JSON.stringify(userProfile))
 
@@ -164,7 +196,8 @@ export class Push {
       // change channels back to json format
       const textChannel: TextChannel = {
         name: newChannel.groupName, 
-        chatId: newChannel.chatId
+        chatId: newChannel.chatId,
+        unread: false
       }
       // gun.get('cliqu3-servers-test-db-3').get(serverId).get('textChannels').set(textChannel)
       // const textChannels = JSON.parse()
@@ -196,10 +229,11 @@ export class Push {
       const voiceChannel: VoiceChannel = {
         name: newChannel.groupName, 
         chatId: newChannel.chatId, 
-        peerInfo: ''
+        // peerInfo: ''
+        peerInfo: null
       }
       // gun.get('cliqu3-servers-test-db-3').get(serverId).get('voiceChannels').set(voiceChannel)
-      let voiceChannels: TextChannel[] = []
+      let voiceChannels: VoiceChannel[] = []
       gun.get('cliqu3-servers-test-db-3').get(serverId).get('voiceChannels').once((data: string ) => {
         console.log("Voice Channels Data String: ", data)
         voiceChannels = JSON.parse(data)

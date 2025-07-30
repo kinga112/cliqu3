@@ -1,0 +1,133 @@
+find real old browser fix.
+try to get the bug back on this react project
+
+// the peer to peer replication causing this issue
+RXDB triggering old browser bug: check randomBytes dirs and check crypto object
+
+IN CLIQUE REACT NODE MODULES randomBytes: switch from global to window -- THE FIX
+
+var crypto = window.crypto || window.msCrypto
+console.log("THIS IS WINDOW CRYPTO ::: " + window.crypto)
+
+TODOS
+1. Add third user to call
+
+// testing multiple users //using this line to inticate changes for multiuser call
+i removed instances of incoming[0] and replaces with an index
+
+3. Add local storage users channels, not one global channel list. global channel list will be replicated amongst peers, but users channels will not.
+
+4. Add functions/UI to add users to servers
+
+5. FIX LinkPreviews with iframe is making everything a bit laggy especially reactions -- maybe fix with new reaction dict - still rerenders all messages on reaction
+14. Try to avoid rerenders on updates to reactions
+<!-- 15. Remove database after app close. Add history to cache when opening channel -->
+16. Add new scrollbar to class, for only specified componenents
+17. Fix: error caching reply
+18. Fix: textarea so its not absolute and can push messages up when height of text area increases
+23. When shrinking width of window, some weird bugs pop up (send message text area is not dynamic, under scrollbar sometimes a white box spacer that must go)
+24. Fix: scroll to bottom on gif/sticker send, dont scroll to bottom on reation send
+25. Fix: Scroll to bottom doesnt go all the way to bottom on first load
+26. Emojis gets cut off by spacer that pushes messages down when only a few messages.
+<!-- 27. join push group chat when gun finds new channels, since other users will not automatically get added! -->
+<!-- 28. FIX: channels not getting added to sidebar -->
+29. Inviting user restarts app
+30. Distinguishing group DM fom server groups: server groups can have group desc. Group DMS idea: set desc to 'GROUP DM'
+31. Unblock users, distinguish with different icon
+32. When creating new channel, other users experience a glitch. New Channel UI flickers in side menu, adding and removing over and over.
+33. ADD CID to reactions to make sure to not remove/add the same reaction over and over on each reload.
+34. Dont append new push messages to state. Just add to cache and reload messages from cache after new push messages are fetched.
+35. Fetch messages based on message timestamp. Not added timestamp to cache. // cache is fetching timestamps out of order!!! ??? 
+36. Resume message position where you last read. Load more messages below.
+<!-- 37. 2 Stream UIDs and receive two messages. Rewrite stream init so only 1 will be active! -->
+37. Fix replies received!
+38. Doesnt seem to be happening anymore: Stream has error when new message comes in: PushStream.ts:380 Error handling CHAT_RECEIVED_MESSAGE event: Error: [Push SDK] - API
+39. Fixed by changing sidebar to not require stream: When using slower internets, trying to load a component while another is loading breaks the application. // Cannot read properties of undefined (reading 'uid')
+40. Create all message types for cache!
+41. Update lastReadMessage in cache to only messages read by user in channel, not when received in stream!
+42. Create global function to convert addresses to standard cliqu3 display (0xf210e3P....)
+43. Fix DMs: [Error - API send] "message": "receipient and account cannot be null or empty"
+44. Add @{name} conversion to message to send notification to person and link to profile in message
+45. Messages are sometimes not sorted correctly by date...
+46. Sending a file doesnt work...might mess up timestamp somehow, the file message was out of order with timestamp
+47. Fix Call! I tried updating the stream not being send across components and just used in VideoCallButton but might need to take a step back!
+    MIGHT NEED TO FIX OLD BUG: process is not defined: Video.ts:479 error in request ReferenceError: process is not defined
+48. Move still used global states to zustand.. create global state store
+49. I think done?? Move to only Dexie.js for cache. 
+50. FIX results from fetching messages from push are reversed. old messages get added first.
+51. Adding to 50: Maybe return Array of Message in the correct order.
+52. Add state functions to server store to append many messages before and after current state. When loading previous deeper message/new ones.
+53. Fixed: Fix reply in fetch!
+54. #general styling got real messed up... check that out! possible from replies? idk i really dont...
+55. When changing channels/servers mid fetch, quit that process and dont add those fetched messages to current state
+56. some messages have undefinded type: PROPS.MESSAGE.MESSAGE.CONTENT:  {type: undefined, content: 'https://cdn-stickers.mojilala.com/convert/4Yc/0W97…fPX7vB0/x7GXUJc3TfciFKunwaR8IpI=.png?v=1583712921'} i think replies... reply content types are undefined. seems like all origin from fetch is undefined too...
+57. Fixed i think: ... No CID for replies??? false... need to look more into this, but seems okay?
+58. START INTEGRATING LENS!
+59. Fix right padding on Message when no scrollbar
+60. I think fixed, but check... Add lastReadCid when sending a message
+61. Fix reply UI if message is back to back with same user... looks weird
+62. Adding new channel appends multiple to the list ...
+<!-- 63. When you send a message, update the chatId lastReadCid to that message cid! It takes a second to receive in stream and if user changes channel, then that message will not be technically 'read', but you sent it so its read..  -->
+64. Update last read cid when stream gets message.. the user didnt read but since its stored in cache and we fetch from cache this needs to be done!
+65. When no scroll bar and messages pushed down, stickers interaction menu can get cut off. maybe add higher z index? idk
+66. Maybe error Reply to dexie?? : DexieError2 {name: 'DataError', message: "Failed to execute 'add' on 'IDBObjectStore': Evalu…key path yielded a value that is not a valid key.", inner: DataError: Failed to execute 'add' on 'IDBObjectStore': Evaluating the object store's key path yiel…}
+67. Possibly fixed because lastReadCid was broken on stream.. Fix message fetch.. sometimes fetch messages when none need to be loaded... something with lastReadCid???
+68. Fixed! : Fix menus when clicking again to close and not open again..
+69. Fix stream to deal with other chat types other than chat message.. like join group... event for chat: `event: 'chat.message'`
+70. FIX from address... well not fix, just come up with standard for Cliqu3
+71. Fix message width to have max. sometimes message content allows horizontal scroll....
+72. Sometimes messages are out of order? Maybe due to async? maybe await cache first issue on Edge
+73. Fix video call. not causing stream to hit other address
+74. Encrypt all! Dexie and Gun
+75. Create Chats / Requests IFeed[] states instead of useState in dmStore
+76. if user doesnt open channel and fetch from history, middle messages will get lost if stream updates last read message cid? big issue :(((
+77. Maybe have lastReadMessageCid when the person reads the message by clicking channel... and also: one for stream: lastStreamedMessageCid..
+78. Make the UserInfoLarge status have 2 permanenet lines so address is not moving when status moves to two lines
+79. on server join accept voice channel chat id ...
+80. Fixed! Dont auto scroll when receiving messages unless user is already at the bottom!
+81. reactions are always at 0 count when only 1 user reacts (maybe due to using same browser, updates cache twice, once to add then to remove) (using chrome and edge works)
+82. Fix save login! janky fix but kinda works! save for after video calls working
+83. Fix Reply DisplayName, visual apears next to reply box
+84. When loading new messages, messages get duplicated in UI
+
+// for push npm package: "file:packages/push-sdk/packages/restapi",
+
+Major Bugs for voice/video calls:
+// 1. below did not work
+<!-- 1. crypto randomBytes is not working: Video.ts:479 error in request Error: Secure random number generation is not supported by this browser.
+Use Chrome, Firefox or Internet Explorer 11
+    at oldBrowser (simple-peer.js?v=807ec47d:543:13)
+    at new _Peer (simple-peer.js?v=807ec47d:3286:20)
+    at Video.request (Video.ts:271:48)
+    at async VideoV2.request (VideoV2.ts:140:5)
+
+This is happening because "randombytes" is not updated to the latest version.
+Adding the line "module": "browser.js", to package.json under node_modules/randombytes will make it working. -->
+
+Kindly remove this dependency and generate randombytes directly to solve the issue.
+
+-- didnt work
+
+might have been fixed by adding "randombytes": "^2.1.0", to cliqu3 package.json
+
+2. error in request ReferenceError: process is not defined
+    at resume (_stream_readable.js:832:5)
+    at Readable.resume (_stream_readable.js:824:5)
+    at Readable.on (_stream_readable.js:753:39)
+    at Video.request (Video.ts:349:46)
+    at async VideoV2.request (VideoV2.ts:140:5)
+
+3. error in request ReferenceError: process is not defined
+    at resume (simple-peer.js?v=d6b24663:2358:9)
+    at Readable.resume (simple-peer.js?v=d6b24663:2350:9)
+    at Readable.on (simple-peer.js?v=d6b24663:2301:43)
+    at Video.request (Video.ts:349:46)
+    at async VideoV2.request (VideoV2.ts:140:5)
+
+FIX: inside index.html: under title: test which ones of these i need
+<script src="simplepeer.js"></script>
+<script>window.global = window</script>
+<script type="module">
+    import process from "process"
+    window.process = process;
+</script>

@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useServerStore } from "../../../state-management/store";
-import { Message } from "../../../cache";
-import { UserInfoLarge } from "../UserInfo";
+// import { Message } from "../../../cache";
+import { UserInfoLarge } from "../../user/UserInfo";
+import { Message } from "../../../types/messageTypes";
 
-function DisplayName(props: {message: Message}){
+// function DisplayName(props: {message: Message}){
+function DisplayName(props: {address: string}){
   const userProfiles = useServerStore((server) => server.userProfiles)
   const [showMenu, setShowMenu] = useState(false)
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
@@ -50,18 +52,21 @@ function DisplayName(props: {message: Message}){
   }, []);
 
   let displayName = ''
-    let picture: string | null = null
-    if(userProfiles[props.message.from] != undefined){
-      picture = userProfiles[props.message.from].picture!
-      if(userProfiles[props.message.from].name != null){
-        displayName = userProfiles[props.message.from].name
-      }else{
-        displayName = props.message.from.substring(0,15)
-      }
-    }else{
-      displayName = props.message.from.substring(0,15)
-    }
+  let picture: string | null = null
 
+  if(userProfiles[props.address] != undefined){
+    picture = userProfiles[props.address].picture!
+    if(userProfiles[props.address].name != null){
+      displayName = userProfiles[props.address].name!
+    }else{
+      displayName = props.address.substring(0,15)
+    }
+  }else{
+    displayName = props.address.substring(0,15)
+  }
+
+  // console.log("DISOPLAY NAME FROM: ", props.message.from)
+  // console.log("USER PROFILE: ", userProfiles[props.message.from])
   return(
     <>
       <div className="relative">
@@ -75,11 +80,16 @@ function DisplayName(props: {message: Message}){
           className="absolute shadow-lg w-96 h-36 bg-slate-400 rounded-xl z-50"
           style={{ top: `${menuPosition.top}px`, right: `-390px` }}
         >
-          <UserInfoLarge 
+          {/* <UserInfoLarge 
             address={props.message.from} 
             displayName={userProfiles[props.message.from].name!} 
             description={userProfiles[props.message.from].desc!} 
             picture={picture!} 
+            edit={false}
+          /> */}
+          <UserInfoLarge 
+            address={props.address}
+            userProfile={userProfiles[props.address]}
           />
         </div>
         )}

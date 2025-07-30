@@ -5,9 +5,9 @@ import {  PushAPI } from '@pushprotocol/restapi/src/lib';
 import { Push } from "../push";
 
 // export const _serverList = hookstate<Array<{id: string, server: any}>>([]);
-export const _db = hookstate<RxDB|undefined>(undefined);
+// export const _db = hookstate<RxDB|undefined>(undefined);
 // export const _user = hookstate<PushAPI|undefined>(undefined);
-export const _push = hookstate<Push|undefined>(undefined);
+// export const _push = hookstate<Push|undefined>(undefined);
 // export const _serverId = hookstate<string>('');
 // export const _channelId = hookstate<string>('');
 export const _openCreateServerModal = hookstate<boolean>(false);

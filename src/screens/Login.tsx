@@ -1,18 +1,16 @@
 import { useEffect, useState } from "react";
 import ConnectButton from "../components/wallet_connect/ConnectButton"
-import { push, rxdb } from "../App";
-import { _db, _push } from "./globalState";
+import { push } from "../App";
 import { ethers } from "ethers";
 import { useHookstate } from "@hookstate/core";
-import Home from "./Home";
 import ConnectButton2 from "../components/wallet_connect/ConnectButton2";
 import { useUserStore } from "../state-management/store";
+import { Home } from "./Home";
 
 function Login(){
   // const [auth, setAuth] = useState(false)
   const authorized = useUserStore((user) => user.authorized)
   const setAuth = useUserStore((user) => user.setAuth)
-  const db = useHookstate(_db)
   
   console.log("LOGIN AUTH: " + authorized)
 
@@ -24,12 +22,12 @@ function Login(){
     try {
       // console.log("before init: ")
       // await push.initUser();
-      await rxdb.initDB();
+      // await rxdb.initDB();
       console.log("after init")
       console.log("USER: " + push.user?.account)
-      _push.set(push);
+      // _push.set(push);
       // _user.set(push.user);
-      _db.set(rxdb);
+      // _db.set(rxdb);
       // const user = await PushAPI.initialize(signer, {
       //   env: CONSTANTS.ENV.STAGING,
       // });
@@ -50,7 +48,7 @@ function Login(){
     <>
       {
       authorized ?
-      <Home db={db!.value}/> :
+      <Home/> :
       <div className="flex justify-center pt-36 bg-slate-900 h-screen w-screen">
         <div className="flex flex-col pt-10 space-y-5 place-items-center h-96 w-[calc(500px)] bg-deep-purple-400 rounded-xl">
           <div className="text-8xl font-thin text-deep-purple-100">

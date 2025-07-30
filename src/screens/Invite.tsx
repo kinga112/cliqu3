@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { push, rxdb } from '../App';
+import { push } from '../App';
 import { useEffect, useState } from 'react';
 import { getServer, gun, joinServer, GunServer } from '../gun';
 import ConnectButton2 from '../components/wallet_connect/ConnectButton2';
@@ -9,6 +9,7 @@ function Invite(){
   const { inviteId } = useParams();
   const [server, setServer] = useState<GunServer | null>(null)
   const [login, setLogin] = useState(false)
+
   useEffect(() => {
     getServer();
   }, []);
@@ -28,6 +29,13 @@ function Invite(){
     // await push.initUser(ethers.Wallet.fromMnemonic("stadium chase abuse leg monitor uncle pledge category flip luxury antenna extra", "m/44'/60'/0'/0/0"))
     // user 3
     await push.initUser(ethers.Wallet.fromMnemonic("emotion senior sheriff base solve drink wall twelve cherry syrup pair evil","m/44'/60'/0'/0/0"))
+    // if saved session
+    // const signer = await restoreWalletSession()
+    // if(signer){
+    //   await push.initUser(signer)
+    // }else{
+    //   await push.initUser(ethers.Wallet.fromMnemonic("emotion senior sheriff base solve drink wall twelve cherry syrup pair evil","m/44'/60'/0'/0/0"))
+    // }
     await joinServer(server!)
   }
 

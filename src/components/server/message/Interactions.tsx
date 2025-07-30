@@ -3,10 +3,11 @@ import emoji from '../../../assets/icons/emoji2.svg'
 import { useServerStore } from "../../../state-management/store"
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { EmojiGrid } from '../Server'
-import { Message } from '../../../cache'
+import { Message } from '../../../types/messageTypes'
+// import { Message } from '../../../cache'
 
 function Interactions(props: {message: Message}){
-  const setReply = useServerStore((server) => server.setReply)
+  const setReply = useServerStore((server) => server.setReply);
   const [showEmojis, setShowEmojis] = useState('invisible');
   const [showInteractions, setShowInteractions] = useState('group-hover:visible invisible');
   const emojiRef = useRef(null);
@@ -38,7 +39,9 @@ function Interactions(props: {message: Message}){
   }, []);
 
   function emojiClick(){
-    console.log("Message: " + props.message.message.content)
+    // console.log("Timestamp: ", props.message.timestamp)
+    console.log("Message: ", props.message)
+    // console.log("Reactions: ", props.message.reactions)
     if(showEmojis == 'invisible'){
       toggleEmojis()
       toggleInteractions()
@@ -47,19 +50,19 @@ function Interactions(props: {message: Message}){
     }
   }
 
-  let messageBlip = ''
+  let replyMessage = ''
 
   if(typeof props.message.message.content == 'string'){
-    messageBlip = props.message.message.content.substring(0, 75)
+    replyMessage = props.message.message.content.substring(0, 75)
   }else{
-    messageBlip = props.message.message.content.content.substring(0, 75)
+    replyMessage = props.message.message.content.content.substring(0, 75)
   }
 
   return(
     <div className={"absolute right-5 -bottom-5 w-90 h-10 bg-deep-purple-300 rounded-lg z-10 " + showInteractions }>
       <div className="flex h-10 p-1.5 relative gap-2 place-items-center justify-center">
         <button className="text-deep-purple-100 border-2 border-deep-purple-100 rounded-lg" 
-                onClick={()=> setReply({messageBlip: messageBlip, reference: props.message.cid})}>
+                onClick={()=> setReply({from: props.message.from, message: replyMessage, reference: props.message.cid})}>
           <img className="select-none" src={reply} height={25} width={25}/>
         </button>
         <button className="text-deep-purple-300" onClick={()=> emojiClick()}>

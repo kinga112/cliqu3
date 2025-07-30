@@ -7,10 +7,11 @@ import {
 } from '@giphy/react-components'
 import { useContext, useState } from 'react'
 import type { GifID, IGif } from '@giphy/js-types'
-import { cache, push } from '../../App'
-import { Msg, useServerStore } from '../../state-management/store'
+import { push } from '../../App'
+import { useServerStore } from '../../state-management/store'
 import { v4 as uuidv4 } from 'uuid';
-import { Message } from '../../cache'
+import { Content, Message, ReferenceContent } from '../../types/messageTypes'
+// import { Message } from '../../cache'
 
 // the search experience consists of the manager and its child components that use SearchContext
 const SearchExperience = () => (
@@ -22,7 +23,7 @@ const SearchExperience = () => (
 // define the components in a separate function so we can
 // use the context hook. You could also use the render props pattern
 const Components = () => {
-  const currentChatChannel = useServerStore((server) => server.currentChatChannel)
+  const currentTextChannel = useServerStore((server) => server.currentTextChannel)
   const appendMessage = useServerStore((server) => server.appendMessage)
   const setReply = useServerStore((server) => server.setReply)
   const { fetchGifs, searchKey } = useContext(SearchContext)
@@ -30,23 +31,23 @@ const Components = () => {
 
   async function onGifClick(gif: IGif | null){
     // console.log("GIF ON Click: " + JSON.stringify(gif))
-    let content = gif?.images.downsized_small.url
+    let content = gif?.images.downsized_small.url!
     if(content == undefined){
-      content = gif?.images.downsized_medium.url
+      content = gif?.images.downsized_medium.url!
       if(content == undefined){
-        content = gif?.images.downsized_large.url
+        content = gif?.images.downsized_large.url!
       }
     }
 
     // console.log("CONTENT: " + content)
-    let msg: any = { type: "MediaEmbed", content: content!}
-    let r = null
+    let msg: any = { type: "MediaEmbed", content: content }
+    // let r = null
     
     const reply = useServerStore.getState().reply;
-    if(reply.messageBlip != '' && reply.reference != ''){
-      msg = {type: "Reply", content: {type: "MediaEmbed", content: content!}, reference: reply.reference}
-      r =  {messageBlip: reply.messageBlip, reference: reply.reference}
-    }
+    // if(reply){
+    //   msg = { type: "Reply", content: msg, reference: reply.reference }
+    //   r =  { from: reply.from, message: reply.message, reference: reply.reference }
+    // }
     
     let from = ''
     try{
@@ -59,21 +60,10 @@ const Components = () => {
     }
 
     const randomId = uuidv4();
-    // const msg: Msg = {
-    //   "id": randomId, "origin": "self", "timestamp": Date.now(),
-    //   "chatId": currentChatChannel.chatId, "from": from.toLowerCase(),
-    //   "message": message, "meta": { "group": true }, "messageContent": content!,
-    //   "cid": "",
-    //   reactions: [{
-    //     emoji: '', count: 0,
-    //     users: []
-    //   }],
-    //   reply: r
-    // }
 
     const message: Message = {
       id: randomId,
-      chatId: currentChatChannel.chatId,
+      chatId: currentTextChannel.chatId,
       origin: "self",
       timestamp: Date.now(),
       from: from,
@@ -82,30 +72,14 @@ const Components = () => {
       cid: "",
       // readCount: 0,
       // lastAccessed: 0,
-      reply: null,
+      reply: reply,
       reactions: {}
     }
-
-    // console.log("MSG: " + JSON.stringify(msg))
-
-    // const replyResponse = await push.user!.chat.send(currentChatChannel.chatId, {
-    //   type: 'Reply',
-    //   content: {
-    //     type: "MediaEmbed", content: content!
-    //   },
-    //   reference: reply.reference
-    // })
     
     appendMessage(message)
-    // cache.appendMessage(currentChatChannel.chatId, message)
-    setReply({messageBlip: '', reference: ''})
-    // const gifResponse = await push.user!.chat.send(currentChatChannel.chatId, {
-    //   type: 'MediaEmbed',
-    //   content: content!
-    // });
+    setReply(null)
 
-    const gifResponse = await push.user!.chat.send(currentChatChannel.chatId, msg);
-    // cache.addCid(currentChatChannel.chatId, randomId, gifResponse.cid)
+    const gifResponse = await push.user!.chat.send(currentTextChannel.chatId, msg);
 
     // console.log("GIF RESPONSE: " + JSON.stringify(gifResponse))
   }

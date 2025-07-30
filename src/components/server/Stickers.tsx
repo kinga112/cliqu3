@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { push } from "../../App";
 import { useServerStore } from "../../state-management/store";
 import { v4 as uuidv4 } from 'uuid';
-import { Message } from "../../cache";
+import { Content, Message, ReferenceContent, Reply } from "../../types/messageTypes";
+// import { Message } from "../../cache";
 
 function StickerGrid(){
   const [stickers, setStickers] = useState([])
@@ -20,7 +21,7 @@ function StickerGrid(){
     })
   }, []);
 
-  const stickerList = stickers.map((sticker: any) => {return <Sticker url={sticker.images.fixed_height.url}/>})
+  const stickerList = stickers.map((sticker: any) => {return <Sticker key={sticker.images.fixed_height.url} url={sticker.images.fixed_height.url}/>})
 
   return (
     <>
@@ -37,19 +38,17 @@ function StickerGrid(){
 export default StickerGrid
 
 function Sticker(props: {url: string}){
-  const currentChatChannel = useServerStore((server) => server.currentChatChannel)
+  const currentTextChannel = useServerStore((server) => server.currentTextChannel)
   const appendMessage = useServerStore((server) => server.appendMessage)
   const setReply = useServerStore((server) => server.setReply)
 
   async function onStickerClick(){
     console.log("STICKER CLICK")
     let msg: any = { type: "MediaEmbed", content: props.url }
-    let r = null
     
     const reply = useServerStore.getState().reply;
-    if(reply.messageBlip != '' && reply.reference != ''){
+    if(reply){
       msg = { type: "Reply", content: { type: "MediaEmbed", content: props.url }, reference: reply.reference }
-      r =  { messageBlip: reply.messageBlip, reference: reply.reference }
     }
     
     let from = ''
@@ -63,35 +62,24 @@ function Sticker(props: {url: string}){
     }
     
     const randomId = uuidv4();
-    // const msg: Msg = {
-    //   "id": randomId, "origin": "self", "timestamp": Date.now(),
-    //   "chatId": currentChatChannel.chatId, "from": from.toLowerCase(),
-    //   "message": message, "meta": { "group": true }, "messageContent": props.url,
-    //   "cid": "",
-    //   reactions: [{
-    //     emoji: '', count: 0,
-    //     users: []
-    //   }],
-    //   reply: r
-    // }
 
     const message: Message = {
       id: randomId,
-      chatId: currentChatChannel.chatId,
+      chatId: currentTextChannel.chatId,
       origin: "self",
       timestamp: Date.now(),
       from: from.toLowerCase(),
       message: msg,
       group: true,
       cid: "",
-      reply: null,
+      reply: reply,
       reactions: {}
     }
 
     appendMessage(message)
-    setReply({messageBlip: '', reference: ''})
+    setReply(null)
 
-    const stickerResponse = await push.user!.chat.send(currentChatChannel.chatId, msg);
+    const stickerResponse = await push.user!.chat.send(currentTextChannel.chatId, msg);
     console.log("STICKER RESPONSE:::: " + JSON.stringify(stickerResponse))
   }
   return(

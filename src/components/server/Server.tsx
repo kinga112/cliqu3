@@ -1,12 +1,12 @@
 import { Immutable, ImmutableArray, ImmutableObject, useHookstate } from "@hookstate/core";
-import { CHAT, ChatMemberProfile, CONSTANTS, GroupDTO, GroupInfoDTO, IFeeds, PeerData, PushAPI, TYPES, user, UserProfile, VideoCallStatus, VideoNotificationRules, VideoPeerInfo,
+import { CHAT, ChatMemberProfile, CONSTANTS, GroupDTO, GroupInfoDTO, IFeeds, PeerData, PushAPI, TYPES, user, UserProfile, VideoNotificationRules, VideoPeerInfo,
 } from "@pushprotocol/restapi/src";
 import { ethers } from "ethers";
 import { DetailedHTMLProps, forwardRef, InputHTMLAttributes, RefObject, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { _db, _openCreateChatChannelModal, _push } from "../../screens/globalState";
+import { _openCreateChatChannelModal } from "../../screens/globalState";
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
-import { cache, push, rxdb } from "../../App";
-import { Msg, useServerStore, Reaction, useCallStore, useUserStore } from "../../state-management/store";
+import { push } from "../../App";
+import { useServerStore, useCallStore, useUserStore } from "../../state-management/store";
 import volume from '../../assets/icons/volume.svg'
 import { PushStream } from "@pushprotocol/restapi/src/lib/pushstream/PushStream";
 import { VIDEO_NOTIFICATION_ACCESS_TYPE } from "@pushprotocol/restapi/src/lib/payloads/constants";
@@ -31,485 +31,35 @@ import arrow from '../../assets/icons/arrow.png'
 import carrot from '../../assets/icons/carrot.svg'
 import { GiphyGrid } from "./Giphy";
 import { useFilePicker } from 'use-file-picker';
+import { FileSizeValidator } from 'use-file-picker/validators';
 import { RxDocument } from "rxdb";
-import { fetchHistory, newFetchHistory } from "../../helperFunctions/fetch";
+import { newFetchHistory } from "../../helperFunctions/fetch";
 import StickerGrid from "./Stickers";
-import LinkPreview from "./LinkPreview";
+import LinkPreview from "./message/LinkPreview";
 import Interactions from "./message/Interactions";
-import { Message, ReferenceContent, Content } from "../../cache";
+// import { Message, ReferenceContent, Content } from "../../cache";
 import MessageElement from "./message/MessageElement";
 import { of } from "rxjs";
-import { UserInfoLarge, UserInfoSmall } from "./UserInfo";
-import { gun, TextChannel, updatePeerInfo, VoiceChannel } from "../../gun";
+import { UserInfoLarge, UserInfoSmall } from "../user/UserInfo";
+import { gun, updatePeerInfo } from "../../gun";
 import { channel } from "diagnostics_channel";
-
-export default function Server(props: {db: any, serverId: Immutable<string>}){
-  // const appendMessage = useServerStore((server) => server.appendMessage)
-  // const addOrRemoveReaction = useServerStore((server) => server.addOrRemoveReaction)
-  // const currentChatChannel = useServerStore((server) => server.currentChatChannel)
-  // // const addReaction = useServerStore((server) => server.addReaction)
-  // // const incrementReactionCount = useServerStore((server) => server.incrementReactionCount)
-  // // const decrementReactionCount = useServerStore((server) => server.decrementReactionCount)
-  // // const getMessages = useServerStore((state) => state.getMessages)
-  // // const addReferenceId = useServerStore((server) => server.addReferenceId)
-  // const [stream, setStream] = useState<PushStream>()
-  // // const [videoData, setVideoData] = useState<TYPES.VIDEO.DATA>(CONSTANTS.VIDEO.INITIAL_DATA);
-  // // const setVideoStreamData = useServerStore((server) => server.setVideoStreamData)
-  // // const setCall = useServerStore((server) => server.setCall)
-  // // const setVideoPeerInfo = useServerStore((server) => server.setVideoPeerInfo)
-  // const setCallStream = useCallStore((call) => call.setStream)
-  // const setCall = useCallStore((call) => call.setCall)
-  // // const setPeerInfo = useCallStore((call) => call.setPeerInfo)
-  // // const setInitiator = useCallStore((call) => call.setInitiator)
-  // const addUser = useCallStore((call) => call.addUser)
-  // // let serverName = '';
-  
-  // // const serverId = useHookstate(_serverId);
-  // // const currentServerId = serverId.value;
-
-  // // console.log("RERENDER")
-  // // console.log("SID: " + serverId.value + " CID: " + currentServerId)
-  // // console.log("serverName: " + serverName)
-  // // if(props.serverId != null && props.serverId != ''){
-  // //   props.db.servers!.findOne().where('id').eq(props.serverId).exec().then((res: any) => {
-  // //     // console.log('RESULT: ' + JSON.stringify(res));
-  // //     // console.log("name: " + res.name)
-  // //     if(serverName != res.name){
-  // //       setServerName(res.name);
-  // //     }
-  // //     // console.log("serverName: " + serverName)
-  // //     // serverName = res.name
-  // //   });
-  // // }
-  // // console.log("SERVER DOC: " + JSON.stringify(doc));
-
-  // // initServer();
-
-  // useEffect(() => {
-  //   console.log("INIT CHANNEL: " + props.serverId)
-  //   initServer();
-  // //   if (videoData?.incoming[0]?.status !== CONSTANTS.VIDEO.STATUS.UNINITIALIZED)
-  // //     return; 
-  // // }, [videoData.incoming[0].status])
-  // })
-
-  // const initServer = async () => {
-  //   console.log("INIT SERVER INIT")
-  //   // const doc =  await rxdb.servers!.findOne({
-  //   //   selector: {
-  //   //     id: {
-  //   //       $eq: props.serverId
-  //   //     }
-  //   //   }
-  //   // }).exec()
-
-  //   // await doc.update({
-  //   //   $set: {
-  //   //     'voiceChannel.$[x].peerInfo': '',
-  //   //     filter: [{"x.chatId": '006d8396c569e64aeab44b42c5ad4c53109b3a1068587f5c10fa5ffd38547766'}]
-  //   //   },
-  //   // })
-
-  //   // await doc.get('voiceChannels').map((voiceChannel: any) => {
-  //   //   if(voiceChannel.chatId == '006d8396c569e64aeab44b42c5ad4c53109b3a1068587f5c10fa5ffd38547766'){
-  //   //     console.log("INIT FOUND INFO!!!!!!! " + voiceChannel.peerInfo)
-  //   //     // peerInfo = voiceChannel.peerInfo
-  //   //   }
-  //   // })
-    
-  //   try {
-  //     // const stream = await user!.initStream(
-  //     const stream = await push.user?.initStream(
-  //       [
-  //         CONSTANTS.STREAM.CHAT, // Listen for chat messages
-  //         // CONSTANTS.STREAM.NOTIF, // Listen for notifications
-  //         CONSTANTS.STREAM.CONNECT, // Listen for connection events
-  //         CONSTANTS.STREAM.DISCONNECT, // Listen for disconnection events
-  //         CONSTANTS.STREAM.VIDEO // CALLS
-  //       ],
-  //       {
-  //         // Filter options:
-  //         filter: {
-  //         // Listen to all channels and chats (default):
-  //           channels: ['*'],
-  //           chats: ['*'],
-  //           // chats: [props.channelId]
-  //           // Listen to specific channels and chats:
-  //           // channels: ['channel-id-1', 'channel-id-2'],
-  //           // chats: ['chat-id-1', 'chat-id-2'],
-      
-  //           // Listen to events with a specific recipient:
-  //           // recipient: '0x...' (replace with recipient wallet address)
-  //         },
-  //         // Connection options:
-  //         connection: {
-  //           retries: 3, // Retry connection 3 times if it fails
-  //         },
-  //         raw: false, // Receive events in structured format
-  //       }
-  //     );
-      
-  //     // Chat event listeners:
-      
-  //     // // Stream connection established:
-  //     stream!.on(CONSTANTS.STREAM.CONNECT, () => {
-  //       // console.log('Stream Connected: ' + user!.account);
-  //       console.log('Stream Connected: ' + push.user!.account);
-        
-      
-  //       // Send initial message to PushAI Bot:
-  //       // console.log('Sending message to test wallet');
-      
-  //       // await user!.chat.send('0xDEC4399dDb5655237Ee0cCBEe1B79273FDD3B465', {
-  //       //   content: 'Hello, from test user',
-  //       //   type: 'Text',
-  //       // });
-      
-  //       // console.log('Message sent to test wallet');
-  //     });
-      
-  //     // Chat message received:
-  //     stream!.on(CONSTANTS.STREAM.CHAT, (pushMsg: any) => {
-  //       console.log("STREAM GOT NEW MESSAGE!!! ", stream?.uid)
-  //       if(pushMsg.chatId == currentChatChannel.chatId){
-  //         cache.updateLastReadMessageCid(pushMsg.chatId, pushMsg.reference)
-  //       }
-  //       const randomId = uuidv4();
-  //       let from = pushMsg.from.split(':')[1].toLowerCase()
-  //       console.log("from: 1 " + from)
-  //       if(from == undefined){
-  //         from = pushMsg.from.toLowerCase()
-  //       }
-  //       console.log("from: 2 " + from)
-  //       // localStorage.setItem("lastReadMessage", pushMsg.cid);
-  //       // if(message.message.type == 'Text'){
-  //       if(pushMsg.message.type != 'Reaction' && pushMsg.message.type != 'Reply'){
-  //         console.log("THIS MESSAGE IS NOT REACTION OR FILE OR REPLY")
-  //         const message: Message = {
-  //           id: randomId,
-  //           chatId: pushMsg.chatId,
-  //           origin: pushMsg.origin,
-  //           timestamp: pushMsg.timestamp,
-  //           from: from,
-  //           message: pushMsg.message,
-  //           group: pushMsg.meta.group,
-  //           cid: pushMsg.reference,
-  //           // readCount: 0,
-  //           // lastAccessed: 0,
-  //           reply: null,
-  //           reactions: {}
-  //         }
-  //         if(pushMsg.origin != 'self' && !pushMsg.from.includes(push.user!.account.toLowerCase())){
-  //           console.log("APPENDING MESSAGE 1")
-  //           appendMessage(message)
-  //         }
-  //         cache.appendMessage(message).then((result: boolean) => {
-  //           if(result){
-  //             console.log("NO ERROR IN CACHE!")
-  //           }else{
-  //             console.log("Message DUP!")
-  //           }
-  //         }).catch(() => {
-  //           console.log("ERROR IN CACHE!")
-  //         })
-  //       }
-  //       if(pushMsg.message.type == 'Reaction'){
-  //         // console.log
-  //         if(pushMsg.origin != 'self' && !pushMsg.from.includes(push.user!.account.toLowerCase())){
-  //           addOrRemoveReaction(pushMsg.message.content, from, pushMsg.message.reference)
-  //         }
-  //         cache.updateReactions(pushMsg.message.content, from, pushMsg.message.reference)
-  //       }if(pushMsg.message.type == 'Reply'){
-  //         console.log("GOT A REPLY!" + pushMsg.message.reference)
-  //         // console.log()
-  //         push.user!.chat.history(pushMsg.chatId, {reference: pushMsg.message.reference, limit: 1}).then((foundMessage: any) => {
-  //           console.log("FIND ELEMENT IN REPLY: " + JSON.stringify(foundMessage))
-  //           const message: Message = {
-  //             id: randomId,
-  //             chatId: pushMsg.chatId,
-  //             origin: pushMsg.origin,
-  //             timestamp: pushMsg.timestamp,
-  //             from: from,
-  //             // message: { type: pushMsg.message.type, content: {type: pushMsg.message.content.type, content: pushMsg.message.content.conten}, reference: pushMsg.message.reference },
-  //             message: { type: pushMsg.messageType, content: {type: pushMsg.message.content.type, content: pushMsg.message.content.content}, reference: pushMsg.message.reference },
-  //             group: pushMsg.meta.group,
-  //             cid: pushMsg.cid,
-  //             reply: { messageBlip: foundMessage[0]!.messageObj.content.substring(0, 75), reference: pushMsg.message.reference },
-  //             reactions: {}
-  //           }
-  //           if(pushMsg.origin != 'self' && !pushMsg.from.includes(push.user!.account.toLowerCase())){
-  //             console.log("APPENDING MESSAGE 2")
-  //             appendMessage(message)
-  //           }
-  //           cache.appendMessage(message)
-  //         })
-  //         // console.log("FIND ELEMENT IN REPLY: " + JSON.stringify(findElement))
-  //         // const message: Message = {
-  //         //   id: randomId,
-  //         //   chatId: pushMsg.chatId,
-  //         //   origin: pushMsg.origin,
-  //         //   timestamp: pushMsg.timestamp,
-  //         //   from: from,
-  //         //   // message: { type: pushMsg.message.type, content: {type: pushMsg.message.content.type, content: pushMsg.message.content.conten}, reference: pushMsg.message.reference },
-  //         //   message: { type: pushMsg.messageType, content: {type: pushMsg.message.content.type, content: pushMsg.message.content.content}, reference: pushMsg.message.reference },
-  //         //   group: pushMsg.meta.group,
-  //         //   cid: pushMsg.cid,
-  //         //   reply: {messageBlip: findElement[0]!.message.content.substring(0, 75), reference: pushMsg.message.reference},
-  //         //   reactions: {}
-  //         // }
-  //         // if(pushMsg.origin != 'self' && !pushMsg.from.includes(push.user!.account.toLowerCase())){
-  //         //   appendMessage(message)
-  //         // }
-  //         // cache.appendMessage(message)
-  //       }
-        
-  //     });
-      
-      
-  //     // Chat operation received:
-  //     stream!.on(CONSTANTS.STREAM.CHAT_OPS, (data: any) => {
-  //       console.log('Chat operation received.');
-  //       console.log(data); // Log the chat operation data
-  //     });
-
-  //     stream!.on(CONSTANTS.STREAM.VIDEO, async (data: TYPES.VIDEO.EVENT) => {
-  //       // console.log("VIDEO STREAM ON!!!")
-
-  //       if (data.event === CONSTANTS.VIDEO.EVENT.REQUEST) {
-  //         console.log("REQUEST CALL!!!")
-  //         // handle call request
-  //         // await aliceVideoCall.approve(recipientAddress);
-  //         // const call = await push.value!.user!.video.initialize(setData, {
-  //         //   stream: stream, // pass the stream object, refer Stream Video
-  //         //   config: {
-  //         //     video: false, // to enable video on start, for frontend use
-  //         //     audio: true, // to enable audio on start, for frontend use
-  //         //   },
-  //         //   // media?: MediaStream, // to pass your existing media stream(for backend use)
-  //         // });
-
-  //         // const call = await push.value!.user!.video.initialize(setVideoData, {
-  //         //   stream: stream, // pass the stream object, refer Stream Video
-  //         //   config: {
-  //         //     video: false, // to enable video on start, for frontend use
-  //         //     audio: true, // to enable audio on start, for frontend use
-  //         //   },
-  //         //   // media?: MediaStream, // to pass your existing media stream(for backend use)
-  //         // });
-
-  //         // setCall(call)
-  //         // const peerInfo: VideoPeerInfo = {
-  //         //   address: data.peerInfo.address,
-  //         //   signal: data.peerInfo.signal,
-  //         //   meta: data.peerInfo.meta
-  //         // }
-
-  //         // setPeerInfo(peerInfo)
-
-  //         // console.log("ADDRESS: " + data.peerInfo.address + ", META: " + data.peerInfo.meta)
-
-  //         // call.approve(videoPeerInfo)
-
-  //       }
-  
-  //       if (data.event === CONSTANTS.VIDEO.EVENT.APPROVE) {
-  //         // handle call approve
-  //         console.log("VIDEO APROVED!!!")
-  //         // console.log("DATA: " + JSON.stringify(data))
-  //         // console.log("VIDEO DATA APPROVE: " + JSON.stringify(videoData))
-  //         // setVideoData(videoData)
-  //         // setCallStream(videoData) // removed?
-  //         // const peerInfo: VideoPeerInfo = {
-  //         //   address: data.peerInfo.address,
-  //         //   signal: data.peerInfo.signal,
-  //         //   meta: data.peerInfo.meta
-  //         // }
-  //         // setPeerInfo(peerInfo)
-  //         // setVideoStreamData(videoData)
-  //       }
-  
-  //       if (data.event === CONSTANTS.VIDEO.EVENT.DENY) {
-  //         // handle call denied
-  //       }
-  
-  //       if (data.event === CONSTANTS.VIDEO.EVENT.CONNECT) {
-  //         // handle call connected
-  //         console.log("VIDEO CONNECTED!!!")
-  //         // setCallStream(videoData) //removed?
-  //         // console.log("DATA: " + JSON.stringify(data))
-  //         // console.log("VIDEO DATA CONNECT: " + JSON.stringify(videoData))
-
-  //         // setVideoStreamData(videoData)
-  //       }
-  
-  //       if (data.event === CONSTANTS.VIDEO.EVENT.DISCONNECT) {
-  //         // handle call disconnected
-  //         console.log("VIDEO DISCONNECTED!!!")
-  //         const currentVoiceChannel = useServerStore.getState().currentVoiceChannel
-
-  //         const doc = await rxdb.servers!.findOne({
-  //           selector: {
-  //             id: {
-  //               $eq: props.serverId
-  //             }
-  //           }
-  //         }).exec()
-  //         // .then((doc: RxDocument) => {
-  //         //   doc.update({
-  //         //     $set: {
-  //         //       'voiceChannel.$[x].peerInfo': '',
-  //         //       filter: [{"x.chatId": currentVoiceChannel}]
-  //         //     },
-  //         //   }).then((newDoc: any) => {
-  //         //     console.log("DOC UPDATED")
-  //         //   })
-  //         // })
-  //         doc.update({
-  //           $set: {
-  //             'voiceChannels.$[x].peerInfo': '',
-  //             filter: [{"x.chatId": currentVoiceChannel}]
-  //           },
-  //         })
-
-  //       }
-  //     });
+import { Messages } from "./Messages";
+import { Message } from "../../types/messageTypes";
+import { cache2 } from "../../dexie";
+import { TextChannel, VoiceChannel } from "../../types/serverTypes";
+import { useCall } from "wagmi";
+import { initVideoCallData } from '@pushprotocol/restapi/src/lib/video';
+import { VideoCallStatus, video as pushVideo, VideoCallData } from '@pushprotocol/restapi/src';
+import { useDirectMessageStore } from "../../state-management/dmStore";
+import { useGlobalStore } from "../../state-management/globalStore";
+// import { shallow } from 'zustand/shallow';
 
 
-  //     console.log("BEFORE CONST CALL!")
-  //     // const call = await push.value!.user!.video.initialize(setVideoData, {
-  //     //   stream: stream, // pass the stream object, refer Stream Video
-  //     //   config: {
-  //     //     video: true, // to enable video on start, for frontend use
-  //     //     audio: true, // to enable audio on start, for frontend use
-  //     //   },
-  //     //   // media?: MediaStream, // to pass your existing media stream(for backend use)
-  //     // });
-
-  //     // setCall(call)
-      
-  //     // Connect the stream:
-  //     await stream!.connect(); // Establish the connection after setting up listeners
-  //     // Stream disconnection:
-  //     // stream.on(CONSTANTS.STREAM.DISCONNECT, () => {
-  //     //   console.log('Stream Disconnected');
-  //     // });
-  //     setStream(stream);
-  //   } catch (error) {
-  //     console.error('Error fetching data:', error);
-  //   }
-  // };
-  
-  // const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-  //   // console.log("EVENT: " + event.target.value);
-  //   // setServerName(event.target.value)
-  // }
-
-  // if(videoData?.incoming[0]?.status === CONSTANTS.VIDEO.STATUS.INITIALIZED){
-  //   console.log('set call stream 1:::' + JSON.stringify(videoData))
-  //   // setCallStream(videoData)
-  //   const currentVoiceChannel = useServerStore.getState().currentVoiceChannel
-  //   console.log("INCOMING INITIALIZED!!!! " + currentVoiceChannel)
-  //   const rules: VideoNotificationRules = {
-  //   access: {
-  //     type: VIDEO_NOTIFICATION_ACCESS_TYPE.PUSH_CHAT,
-  //     data: {
-  //       // chatId: currentChatChannel.chatId,
-  //       chatId: currentVoiceChannel
-  //     },
-  //   },
-  // }
-  //   const meta = {rules: rules}
-  //   const peerInfo: VideoPeerInfo = {
-  //     address: videoData.meta.initiator.address,
-  //     signal: videoData.meta.initiator.signal,
-  //     meta: meta
-  //   }
-
-  //   // const doc = rxdb.servers!.findOne().where('id').eq(props.serverId).where('voiceChannel').eq('chatId').eq(currentVoiceChannel).exec()
-  //   rxdb.servers!.findOne({
-  //     selector: {
-  //       id: {
-  //         $eq: props.serverId
-  //       }
-  //     }
-  //   }).exec().then((doc: RxDocument) => {
-  //     doc.update({
-  //       $set: {
-  //         'voiceChannel.$[x].peerInfo': JSON.stringify(peerInfo),
-  //         filter: [{"x.chatId": currentVoiceChannel}]
-  //       },
-  //     }).then((newDoc: any) => {
-  //       console.log("DOC UPDATED")
-  //     })
-  //   })
-  // }
-  // // videoData?.incoming[0]?.
-  // if(videoData?.incoming[0]?.status === CONSTANTS.VIDEO.STATUS.CONNECTED){
-  //   // console.log("VIDEO DATA CONNECTED: " + JSON.stringify(videoData))
-  //   // const initiator = useCallStore.getState().initiator;
-  //   // const users = useCallStore.getState().users;
-  //   console.log('set call stream 2')
-  //   console.log("VIDEO DATA CONNECTED: " + JSON.stringify(videoData))
-  //   setCallStream(videoData)
-  //   // if(!initiator){
-  //   //   // console.log("I DID NOT START CALL::: " + videoData?.incoming)
-  //   //   // addUser(videoData?.incoming[0].address)
-  //   //   const address = videoData?.local.address
-  //   //   if(!users.includes(address)){
-  //   //     addUser(address)
-  //   //   }
-  //   // }
-  //   // else{
-  //     // addUser(videoData?.incoming[0].address)
-  //   // }
-  // }
-  // if(videoData?.incoming[0]?.status === CONSTANTS.VIDEO.STATUS.RECEIVED){
-  //   console.log("VIDEO INIT: " + JSON.stringify(videoData))
-  //   const users = useCallStore.getState().users;
-  //   console.log('set call stream 3')
-  //   setCallStream(videoData)
-  //   const initiator = useCallStore.getState().initiator;
-  //   if(!initiator){
-  //     console.log("I DID NOT START CALL::: " + videoData?.incoming[0].address)
-  //     const address = videoData?.incoming[0].address
-  //     if(!users.includes(address)){
-  //       addUser(address)
-  //     }
-  //   }
-    // else{
-      // videoData.meta.broadcast?.livepeerInfo
-      // console.log("I STARTED CALL: " + JSON.stringify(videoData.meta.broadcast?.livepeerInfo))
-      // const currentChatChannel = useServerStore.getState().currentChatChannel
-      // const doc = rxdb.servers!.findOne().where('id').eq('').exec();
-      // rxdb.servers!.findOne({
-      //   selector: {
-      //     voiceChannel: {
-      //       chatId: {
-      //         $eq: currentChatChannel.chatId
-      //       }
-      //     }
-      //   }
-      // }).exec().then((doc: RxDocument) => {
-      //   console.log("DOC!!!: " + JSON.stringify(doc))
-      //   // doc.modify((docData: any) => {
-      //   //   // docData.peerInfo = videoData
-      //   //   return docData.this;
-      //   // })
-      // })
-    // }
-  // }else if(videoData?.local.address){
-    // console.log("YOU STARTmED A CALL!")
-    // setInitiator(true)
-    // setCallStream(videoData)
-  // }
-  const stream = useServerStore((server) => server.stream)
-  console.log('SERVER: ', stream!.uid)
-
+export default function Server(){
   return (
     <>
       <div className="flex h-full z-50">
-        {/* SERVER ID: {props.serverId} */}
-        <SideBar serverId={props.serverId} stream={stream!}/>
+        <SideBar/>
         <ChatChannel/>
       </div>
     </>
@@ -517,7 +67,7 @@ export default function Server(props: {db: any, serverId: Immutable<string>}){
 }
 
 function ChatChannel(){
-  const currentChatChannel = useServerStore((state) => state.currentChatChannel)
+  const currentTextChannel = useServerStore((state) => state.currentTextChannel)
   const [showUsers, setShowUsers] = useState(true)
   const setMessages = useServerStore((server) => server.setMessages)
   const appendMessage = useServerStore((server) => server.appendMessage)
@@ -562,8 +112,8 @@ function ChatChannel(){
     <>
       <div className="flex flex-col h-full w-full bg-off-black-500">
         <div className="flex h-14 border-b z-10 border-off-black-700 shadow-md shadow-off-black-700 justify-between place-items-center px-3 shrink-0 text-4xl font-extralight">
-          {currentChatChannel.name}
-          {currentChatChannel.chatId != '' ? <div className="flex">
+          {currentTextChannel.name}
+          {currentTextChannel.chatId != '' ? <div className="flex">
             <button onClick={() => setShowUsers(!showUsers)} className="flex justify-center place-items-center h-10 w-10 rounded-md bg-deep-purple-300">
               <img src={users} height={30} width={30}/>
             </button>
@@ -579,86 +129,7 @@ function ChatChannel(){
           <BottomBar/>
         </div>
       </div>
-      {currentChatChannel.chatId != '' && showUsers ? <MembersList key={currentChatChannel.chatId}/> : <div/>}
-    </>
-  )
-}
-
-export function Messages(){
-  const messages = useServerStore((state) => state.messages)
-  const currentChatChannel = useServerStore((state) => state.currentChatChannel)
-  const [hasScrollbar, setHasScrollbar] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  // const reply = useServerStore.getState().reply;
-  // const setReply = useServerStore((server) => server.setReply)
-  // let messageList = messages.map((message: Msg) => <Message key={message.id} message={message}/>);
-  // console.log("MESSAGES: " + JSON.stringify(messages))
-  // let messageList = messages.map((message: Message) => <MessageElement key={message.cid != '' ? message.cid : message.id} message={message}/>);
-  // let messageList = messages.map((message: Message) => (
-  //   <MessageElement key={message.cid || message.id} message={message} />
-  // ));
-
-  // const messageList = useMemo(() => 
-  //   messages.map((message: Message) => <MessageElement key={message.cid + message.id} message={message}/>), 
-  //   [messages]
-  // );
-
-  const messageList = useMemo(() => 
-    messages.map((message: Message, index: number) => {
-      // console.log("MESSAGE INDEX: " + index)
-      // console.log("LAST MESSAGE INDEX FROM: " + messages[index-1].from)
-      // let lastMessageFrom = ''
-      // if(index != 0){
-      //   lastMessageFrom = messages[index-1].from
-      // }
-      // console.log("LAST MESSAGE INDEX: " + messages[index-1].message.content)
-      return <MessageElement key={message.cid + message.id} message={message} lastMessage={messages[index-1]}/>
-    }), 
-    [messages]
-  );
-
-
-
-  useEffect(() => {
-    // const container = containerRef.current;
-    if (ref.current != null) {
-      const { clientHeight, scrollHeight } = ref.current;
-      setHasScrollbar(clientHeight < scrollHeight);
-      ref.current.scrollTop = ref.current.scrollHeight;
-      console.log("CLIENT HEIGHT: " + clientHeight + ", SCROLL HEIGHT: " + scrollHeight)
-      // if(hasScrollbar){
-      //   ref.current.scrollTop = ref.current.scrollHeight;
-      // }else{
-      //   ref.current.scrollTop = ref.current.scrollHeight - 52;
-      // }
-      // console.log("SETTING SCROLLLLLL!!!!!")
-      // ref.current.scrollTop = ref.current.scrollHeight;
-      // const { clientHeight, scrollHeight } = ref.current;
-      // setHasScrollbar(clientHeight < scrollHeight);
-    }
-
-  }, [messages]);
-
-
-  let marginRight = 'mr-8'
-  if(hasScrollbar){
-    marginRight = ''
-  }
-
-  let marginTop = ''
-  if(messageList.length < 5){
-    marginTop = 'mt-36'
-  }
-
-  return(
-    <>
-      {hasScrollbar ? <div/> : <div className="flex flex-grow"/>} {/* spacer to push messages to bottom  */}
-      <div ref={ref} className={"block overflow-y-auto " + marginRight}>
-        <div key={currentChatChannel.chatId} className={"flex flex-col pb-6 pt-4 " + marginTop}>
-          {messageList}
-        </div>
-      </div>
-      <div className="h-3 shrink-0"/> 
+      {currentTextChannel.chatId != '' && showUsers ? <MembersList key={currentTextChannel.chatId}/> : <div/>}
     </>
   )
 }
@@ -669,13 +140,17 @@ function Reply(){
   // console.log("REPLY IN REPLY: " + reply.reference)
   
   let showReply = 'invisible'
-  if(reply.messageBlip != ''){
+  if(reply){
     showReply = 'visible'
   }
 
   let overflow = false
-  if(reply.messageBlip.length == 50){
-    overflow = true
+  if(reply){
+    if(reply.message){
+      if(reply.message.length >= 50){
+        overflow = true
+      }
+    }
   }
 
   return(
@@ -683,11 +158,11 @@ function Reply(){
       <div className={"absolute z-50 -top-4 rounded-e-md rounded-tl-md p-1 bg-deep-purple-300 " + showReply}>
         <div className="flex gap-3">
           <div className="flex gap-0">
-            <p>Replying to: "{reply.messageBlip}</p>
+            <p>Replying to: "{reply?.message}</p>
             {overflow ? <p>...</p> : <p/>}
             <p>"</p>
           </div>
-          <button onClick={() => setReply({messageBlip: '', reference: ''})}>
+          <button onClick={() => setReply(null)}>
             <img className="hover:bg-red-700 rounded-full" src={close} height={25} width={25}/>
           </button>
         </div>
@@ -697,7 +172,7 @@ function Reply(){
 }
 
 export function ReactionElement(props: {emoji: string, count: number, users: string[], cid: string, userProfiles: any}){
-  const currentChatChannel = useServerStore((server) => server.currentChatChannel)
+  const currentTextChannel = useServerStore((server) => server.currentTextChannel)
   // const userProfiles = useServerStore((server) => server.userProfiles)
   const addOrRemoveReaction = useServerStore((server) => server.addOrRemoveReaction)
 
@@ -711,7 +186,7 @@ export function ReactionElement(props: {emoji: string, count: number, users: str
   async function reactionOnClick(){
     addOrRemoveReaction(props.emoji, push.user?.account.toLowerCase()!, props.cid)
 
-    const reaction = await push.user!.chat.send(currentChatChannel.chatId, {
+    const reaction = await push.user!.chat.send(currentTextChannel.chatId, {
       type: 'Reaction',
       content: props.emoji,
       reference: props.cid,
@@ -736,6 +211,8 @@ export function ReactionElement(props: {emoji: string, count: number, users: str
       }
     }
   })
+
+  // console.log("REACTION ELEMENT: emoji: " + props.emoji + " , count: " + props.count + " , cid: " + props.cid)
 
   return(
     <>
@@ -773,14 +250,14 @@ export function EmojiGrid(props: {cid: string, from: string, reactions: {[emoji:
 }
 
 function EmojiElement(props: {emoji: string, cid: string, from: string, reactions: {[emoji: string]: {count: number, users: string[]}}}){
-  const currentChatChannel = useServerStore((server) => server.currentChatChannel)
+  const currentTextChannel = useServerStore((server) => server.currentTextChannel)
   const addOrRemoveReaction = useServerStore((server) => server.addOrRemoveReaction)
 
   async function sendReaction(){
-    // console.log("REACTIONS: " + JSON.stringify(props.reactions) + ", EMOJI: " + props.emoji)
+    console.log("REACTIONS: " + JSON.stringify(props.reactions) + ", EMOJI: " + props.emoji + " FROM: " + props.from + " Cid: " + props.cid)
     addOrRemoveReaction(props.emoji, push.user?.account.toLowerCase()!, props.cid)
 
-    const reaction = await push.user!.chat.send(currentChatChannel.chatId, {
+    const reaction = await push.user!.chat.send(currentTextChannel.chatId, {
       content: props.emoji,
       type: 'Reaction',
       reference: props.cid,
@@ -840,30 +317,39 @@ function MembersList(){
   )
 }
 
-function SideBar(props: {serverId: string, stream: PushStream}){
+// function SideBar(props: {serverId: string, stream: PushStream}){
+function SideBar(){
   const serverName = useServerStore((server) => server.name)
+  const serverId = useServerStore((server) => server.serverId)
   const creator = useServerStore((server) => server.creator)
+  // const stream = useServerStore((server) => server.stream)
   // const serverId = useServerStore((server) => server.serverId)
   // const serverId = useServerStore((server) => server.serverId)
   // const chatChannels = useServerStore((server) => server.chatChannels)
-  // const setChatChannels = useServerStore((server) => server.setChatChannels)
   // const [voiceChannels, setVoiceChannels] = useState<VoiceChannel[]>([])
   // const voiceChannels = useServerStore((server) => server.voiceChannels)
   // const setVoiceChannels = useServerStore((server) => server.setVoiceChannels)
   const [textChannels, setTextChannels] = useState<TextChannel[]>([])
-  const [voiceChannels, setVoiceChannels] = useState<VoiceChannel[]>([])
+  // const [voiceChannels, setVoiceChannels] = useState<VoiceChannel[]>([])
+  const [voiceChannels, setVoiceChannels] = useState<{[chatId: string] : VoiceChannel}>({})
   const [openVideo, setOpenVideo] = useState(false)
   const [showTextChannels, setShowTextChannels] = useState(true)
   const [showVoiceChannels, setShowVoiceChannels] = useState(true)
-  const [showSettingsModal, setShowSettingsModal] = useState(false)
+  // const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [showInviteUserModal, setShowInviteUserModal] = useState(false)
   const [showServerMenu, setShowServerMenu] = useState(false)
   // const [userProfile, setUserProfile] = useState<any>({})
-  const userProfile = useUserStore((user) => user.profile)
-  const setUserProfile = useUserStore((user) => user.setProfile)
-  const currentChatChannel = useServerStore((server) => server.currentChatChannel)
-  const serverTextChannels = useServerStore((server) => server.chatChannels)
+  const serverNameButtonRef = useRef(null)
+  // const userProfile = useUserStore((user) => user.profile)
+  // const setUserProfile = useUserStore((user) => user.setProfile)
+  const currentTextChannel = useServerStore((server) => server.currentTextChannel)
+  const serverTextChannels = useServerStore((server) => server.textChannels)
+  // const serverTextChannelsLength = useServerStore((server) => server.textChannels.length)
   const serverVoiceChannels = useServerStore((server) => server.voiceChannels)
+  // const serverVoiceChannelsLength = useServerStore((server) => server.voiceChannels.length)
+  const appendVoiceChannel = useServerStore((server) => server.appendVoiceChannel)
+  // const appendTextChannel = useServerStore((server) => server.appendTextChannel)
+  const callStream = useCallStore((call) => call.stream)
   // const [userProfile]
 
   let isCreator = false
@@ -872,8 +358,9 @@ function SideBar(props: {serverId: string, stream: PushStream}){
   }
 
   useEffect(() => {
-    setTextChannels(serverTextChannels)
-    setVoiceChannels(serverVoiceChannels)
+    // setTextChannels(serverTextChannels)
+    // setVoiceChannels(serverVoiceChannels)
+    // setVoiceChannels(serverVoiceChannels)
     // fetchChannels()
     // gun.get('cliqu3-servers-test-db-3').get(props.serverId).get('textChannels').once(function(data, key){
     //   // {property: 'value'}, 'key'
@@ -899,54 +386,67 @@ function SideBar(props: {serverId: string, stream: PushStream}){
     //   })
     //   setVoiceChannels(voiceChannels)
     // })
-    gun.get('cliqu3-servers-test-db-3').get(props.serverId).get('textChannels').on((textChannels, key) => {
-      console.log('Text Channels:', key, textChannels);
+    console.log('USE EFFECT SIDE BAR:');
+    gun.get('cliqu3-servers-test-db-3').get(serverId).get('textChannels').on((textChannelsJson, key) => {
+      console.log('Text Channels:', key, textChannelsJson);
       // setServerList([...serverList, server])
       // setServerList((serverList: Array<any>) => [...serverList, server]);
-      JSON.parse(textChannels).map((textChannel: TextChannel) => {
-        cache.addChannel({
+      JSON.parse(textChannelsJson).map((textChannel: TextChannel) => {
+        cache2.addChannel({
           chatId: textChannel.chatId,
           name: textChannel.name,
           users: [],
-          lastReadMessageCid: ""
+          lastReadMessageCid: "",
         })
-        setTextChannels(prevTextChannels => {
-          // Check if the server is already in the list based on a unique property (e.g., server.id or key)
-          const channelExists = prevTextChannels.some(existingChanel => existingChanel.chatId === textChannel.chatId);
+        setTextChannels(prevTextChannelList => {
+          // Check if the channel is already in the list based on a unique property (chatId)
+          const textChannelExists = prevTextChannelList.some(existingTextChannel => existingTextChannel.chatId === textChannel.chatId);
       
-          // Only add the server if it doesn't already exist in the list
-          if (!channelExists) {
-            push.user!.chat.group.join(textChannel.chatId)
-            return [...prevTextChannels, textChannel];
+          // Only add the channel if it doesn't already exist in the list
+          if (!textChannelExists) {
+            return [textChannel, ...prevTextChannelList];
           }
           
-          // If server already exists, return the current list
-          return prevTextChannels;
+          // If channel already exists, return the current list
+          return prevTextChannelList;
         });
       })
     });
-
-    gun.get('cliqu3-servers-test-db-3').get(props.serverId).get('voiceChannels').on((voiceChannels, key) => {
+    // const textChannelsState = useServerStore.getState().chatChannels
+    // setTextChannels(textChannelsState)
+    gun.get('cliqu3-servers-test-db-3').get(serverId).get('voiceChannels').on((voiceChannels, key) => {
       console.log('Voice Channels:', key, voiceChannels);
       // setServerList([...serverList, server])
       // setServerList((serverList: Array<any>) => [...serverList, server]);
       JSON.parse(voiceChannels).map((voiceChannel: VoiceChannel) => {
-        setVoiceChannels(prevVoiceChannels => {
-          // Check if the server is already in the list based on a unique property (e.g., server.id or key)
-          const channelExists = prevVoiceChannels.some(existingChanel => existingChanel.chatId === voiceChannel.chatId);
+        // const voiceChannelsState = useServerStore.getState().voiceChannels
+        if(!serverVoiceChannels[voiceChannel.chatId]){
+          // console.log("chat Id: ", voiceChannel.chatId)
+          // console.log("SERVER VOICE CHANNELS: ", serverVoiceChannels)
+          appendVoiceChannel(voiceChannel)
+        }
+        setVoiceChannels(serverVoiceChannels)
+        // appendVoiceChannel(voiceChannel)
+        // setVoiceChannels()
+        // setVoiceChannels(voiceChannel)
+        // setVoiceChannels(prevVoiceChannels => {
+        //   // Check if the server is already in the list based on a unique property (e.g., server.id or key)
+        //   const channelExists = prevVoiceChannels.some(existingChanel => existingChanel.chatId === voiceChannel.chatId);
       
-          // Only add the server if it doesn't already exist in the list
-          if (!channelExists) {
-            push.user!.chat.group.join(voiceChannel.chatId)
-            return [...prevVoiceChannels, voiceChannel];
-          }
+        //   // Only add the server if it doesn't already exist in the list
+        //   if (!channelExists) {
+        //     push.user!.chat.group.join(voiceChannel.chatId)
+        //     return [...prevVoiceChannels, voiceChannel];
+        //   }
           
-          // If server already exists, return the current list
-          return prevVoiceChannels;
-        });
+        //   // If server already exists, return the current list
+        //   return prevVoiceChannels;
+        // });
       })
     });
-  }, [props.serverId, textChannels, voiceChannels])
+    // const voiceChannelsState = useServerStore.getState().voiceChannels
+  // }, [props.serverId, textChannels, voiceChannels])
+  }, [serverId, textChannels, voiceChannels])
   // }, [])
 
   // const fetchChannels = async () => {
@@ -958,34 +458,33 @@ function SideBar(props: {serverId: string, stream: PushStream}){
   //   }
   // }
 
-  // gun.get('cliqu3-servers-test-db-3').get(props.serverId).get('textChannels').on(function(data, key){
-  //   // {property: 'value'}, 'key'
-  //   console.log("GUN DATA TC: " + JSON.stringify(data))
-  //   console.log("GUN KEY: " + key)
-
-  //   const textChannels: TextChannel[] = JSON.parse(data)
-  //   textChannels.map((textChannel) => {
-  //     push.user!.chat.group.join(textChannel.chatId)
-  //   })
-  //   setChatChannels(textChannels)
-  // })
-
-  // gun.get('cliqu3-servers-test-db-3').get(props.serverId).get('voiceChannels').on(function(data, key){
-  //   // {property: 'value'}, 'key'
-  //   console.log("GUN DATA VC: " + JSON.stringify(data))
-  //   console.log("GUN KEY: " + key)
-
-  //   const voiceChannels: VoiceChannel[] = JSON.parse(data)
-  //   voiceChannels.map((voiceChannel) => {
-  //     push.user!.chat.group.join(voiceChannel.chatId)
-  //   })
-  //   setChatChannels(voiceChannels)
-  // })
-
   // let chatChannelItems = chatChannels.map((channel: {name: string, chatId: string}) => <ChatChannelButton key={channel.chatId} name={channel.name} chatId={channel.chatId}/>);
-  let textChannelItems = textChannels.map((channel: {name: string, chatId: string}) => <ChatChannelButton key={channel.chatId} name={channel.name} chatId={channel.chatId}/>);
+  // let textChannelItems = textChannels.map((channel: {name: string, chatId: string}) => <ChatChannelButton key={channel.chatId} name={channel.name} chatId={channel.chatId}/>);
 
-  let voiceChannelItems = voiceChannels.map((voiceChannel: VoiceChannel) => <VoiceChannelButton key={voiceChannel.chatId} name={voiceChannel.name} chatId={voiceChannel.chatId} stream={props.stream}/>);
+  // let voiceChannelItems = voiceChannels.map((voiceChannel: VoiceChannel) => {
+  //   // return <VoiceChannelButton key={voiceChannel.chatId} name={voiceChannel.name} chatId={voiceChannel.chatId} stream={stream!}/>
+  //   return <VoiceChannelButton key={voiceChannel.chatId} name={voiceChannel.name} chatId={voiceChannel.chatId}/>
+  // });
+
+  let textChannelItems = serverTextChannels.map((channel: TextChannel) => <ChatChannelButton key={channel.chatId} name={channel.name} chatId={channel.chatId} unread={channel.unread}/>);
+
+  // let voiceChannelItems = serverVoiceChannels.map((voiceChannel: VoiceChannel) => {
+  //   // return <VoiceChannelButton key={voiceChannel.chatId} name={voiceChannel.name} chatId={voiceChannel.chatId} stream={stream!}/>
+  //   return <VoiceChannelButton key={voiceChannel.chatId} name={voiceChannel.name} chatId={voiceChannel.chatId}/>
+  // });
+
+  // let voiceChannelItems = Object.keys(serverVoiceChannels).forEach(key => {
+  //   let voiceChannel = serverVoiceChannels[key]
+  //   return <VoiceChannelButton key={voiceChannel.chatId} name={voiceChannel.name} chatId={voiceChannel.chatId}/>
+  // });
+
+  let voiceChannelItems: JSX.Element[] = []
+  for (let key in serverVoiceChannels) {
+    let voiceChannel = serverVoiceChannels[key];
+    voiceChannelItems.push(<NewVoiceChannelButton key={voiceChannel.chatId} name={voiceChannel.name} chatId={voiceChannel.chatId}/>)
+    // Use `key` and `value`
+  }
+
   // let userProfile: any
 
   // rxdb!.servers!.$.subscribe((changeEvent: any) => {
@@ -1071,25 +570,25 @@ function SideBar(props: {serverId: string, stream: PushStream}){
     )
   }
 
-  const stream = useCallStore((server) => server.stream)
+  // const callStream = useCallStore((call) => call.stream)
 
   // needs fix
   async function endCall(){
     const call = useCallStore.getState().call
-    const doc =  await rxdb.servers!.findOne({
-      selector: {
-        id: {
-          $eq: props.serverId
-        }
-      }
-    }).exec()
+    // const doc =  await rxdb.servers!.findOne({
+    //   selector: {
+    //     id: {
+    //       $eq: props.serverId
+    //     }
+    //   }
+    // }).exec()
 
-    await doc.update({
-      $set: {
-        'voiceChannels.$[x].peerInfo': '',
-        filter: [{"x.chatId": '54776f362792a36b5099cc2a8ff428432536332b2a12f46b3642eff0cc7ab377'}]
-      },
-    })
+    // await doc.update({
+    //   $set: {
+    //     'voiceChannels.$[x].peerInfo': '',
+    //     filter: [{"x.chatId": '54776f362792a36b5099cc2a8ff428432536332b2a12f46b3642eff0cc7ab377'}]
+    //   },
+    // })
 
     // await call!.disconnect() // needs work!
   }
@@ -1103,85 +602,85 @@ function SideBar(props: {serverId: string, stream: PushStream}){
     voiceChannelArrow = ' -rotate-90'
   }
 
-  const incomingAudioUsers = stream.incoming.map((peerData: PeerData) => {return peerData.status == VideoCallStatus.CONNECTED ? <AudioPlayer key={peerData.address} stream={peerData.stream} isMuted={false} user={peerData.address}/> : <div/>})
-  console.log("THIS USER: " + push.user!.account)
+  const incomingAudioUsers = callStream.incoming.map((peerData: PeerData) => {return peerData.status == VideoCallStatus.CONNECTED ? <AudioPlayer key={peerData.address} stream={peerData.stream} isMuted={false} user={peerData.address}/> : <div/>})
+  // console.log("THIS USER: " + push.user!.account)
 
-  function SettingsModal(){
-    const [displayName, setDisplayName] = useState(userProfile.name)
-    const [description, setDescription] = useState(userProfile.desc)
-    const [picture, setPicture] = useState(userProfile.picture)
-    const [loading, setLoading] = useState(false)
+  // function SettingsModal(){
+  //   const [displayName, setDisplayName] = useState(userProfile!.name)
+  //   const [description, setDescription] = useState(userProfile!.desc)
+  //   const [picture, setPicture] = useState(userProfile!.picture)
+  //   const [loading, setLoading] = useState(false)
 
-    const handleDisplayNameInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      // console.log("EVENT: " + event.target.value);
-      setDisplayName(event.target.value)
-    }
+  //   const handleDisplayNameInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  //     // console.log("EVENT: " + event.target.value);
+  //     setDisplayName(event.target.value)
+  //   }
 
-    const handleDescriptionInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      // console.log("EVENT: " + event.target.value);
-      setDescription(event.target.value)
-    }
+  //   const handleDescriptionInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  //     // console.log("EVENT: " + event.target.value);
+  //     setDescription(event.target.value)
+  //   }
 
-    const handlePictureInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      // console.log("EVENT: " + event.target.value);
-      setPicture(event.target.value)
-    }
+  //   const handlePictureInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  //     // console.log("EVENT: " + event.target.value);
+  //     setPicture(event.target.value)
+  //   }
 
-    async function updateUserInfo(){
-      setLoading(true)
-      try{
-        if(displayName != userProfile.name){
-          const updateResponse = await push.user!.profile.update({name: displayName})
-          console.log("UPDATE NAME RESPONSE: " + updateResponse)
-        }
-        if(description != userProfile.desc){
-          const updateResponse = await push.user!.profile.update({desc: description})
-          console.log("UPDATE DESC RESPONSE: " + updateResponse)
-        }
-        if(picture != userProfile.picture){
-          const updateResponse = await push.user!.profile.update({picture: picture})
-          console.log("UPDATE PIC RESPONSE: " + updateResponse)
-        }
-      }catch{
-        console.log('error updating profile info')
-      }
-      setUserProfile({name: displayName, desc: description, picture: picture})
-      setLoading(false)
-    }
+  //   async function updateUserInfo(){
+  //     setLoading(true)
+  //     try{
+  //       if(displayName != userProfile!.name){
+  //         const updateResponse = await push.user!.profile.update({name: displayName!})
+  //         console.log("UPDATE NAME RESPONSE: " + updateResponse)
+  //       }
+  //       if(description != userProfile!.desc){
+  //         const updateResponse = await push.user!.profile.update({desc: description!})
+  //         console.log("UPDATE DESC RESPONSE: " + updateResponse)
+  //       }
+  //       if(picture != userProfile!.picture){
+  //         const updateResponse = await push.user!.profile.update({picture: picture!})
+  //         console.log("UPDATE PIC RESPONSE: " + updateResponse)
+  //       }
+  //     }catch{
+  //       console.log('error updating profile info')
+  //     }
+  //     // setUserProfile({name: displayName, desc: description, picture: picture})
+  //     setUserProfile(await push.user!.profile.info())
+  //     setLoading(false)
+  //   }
 
-
-    return(
-      <>
-        <Dialog open={showSettingsModal} onClose={() => {setShowSettingsModal(false)}} className="relative z-50 text-deep-purple-100 select-none">
-          <div className="fixed inset-0 flex w-screen items-center justify-center">
-            <DialogPanel className="flex flex-col w-[calc(60vw)] h-[calc(80vh)] space-y-1 bg-deep-purple-400 p-10 rounded-md">
-              <DialogTitle className="flex font-extralight text-5xl justify-center w-full p-5">User Settings</DialogTitle>
-              {/* <div className="flex w-full gap-10 place-items-center justify-center"> */}
-              <div className="flex flex-col w-full place-items-center justify-center gap-5 pr-20">
-                <div className="grid grid-cols-3 grid-flow-row-dense gap-2 w-full">
-                  <div className="flex justify-end text-lg font-semibold shrink-0">Display Name</div>
-                  <input className="w-full bg-deep-purple-500 p-2 focus:outline-none col-span-2" defaultValue={displayName} onChange={handleDisplayNameInputChange}/>
-                  <div className="flex justify-end text-lg font-semibold shrink-0">Description</div>
-                  <input className="w-full bg-deep-purple-500 p-2 focus:outline-none col-span-2" defaultValue={description} onChange={handleDescriptionInputChange}/>
-                  <div className="flex justify-end text-lg font-semibold shrink-0">Image Link</div>
-                  <input className="w-full bg-deep-purple-500 p-2 focus:outline-none col-span-2" defaultValue={picture} onChange={handlePictureInputChange}/>
-                </div>
-                <UserInfoLarge address={push.user!.account} displayName={displayName} description={description} picture={picture}/>
-              </div>
-              <div className="flex justify-center w-full py-3">
-                <button className="flex justify-center place-items-center h-12 w-32 p-1 rounded bg-deep-purple-100 text-deep-purple-400 font-semibold" onClick={updateUserInfo}>
-                  {loading ? <img className="animate-spin" src={loader} height={30} width={30}/> : <div>Save Changes</div>}
-                </button>
-              </div>
-            </DialogPanel>
-          </div>
-        </Dialog>
-      </>
-    )
-  }
+  //   return(
+  //     <>
+  //       <Dialog open={showSettingsModal} onClose={() => {setShowSettingsModal(false)}} className="relative z-50 text-deep-purple-100 select-none">
+  //         <div className="fixed inset-0 flex w-screen items-center justify-center">
+  //           <DialogPanel className="flex flex-col w-[calc(60vw)] h-[calc(80vh)] space-y-1 bg-deep-purple-400 p-10 rounded-md">
+  //             <DialogTitle className="flex font-extralight text-5xl justify-center w-full p-5">User Settings</DialogTitle>
+  //             {/* <div className="flex w-full gap-10 place-items-center justify-center"> */}
+  //             <div className="flex flex-col w-full place-items-center justify-center gap-5 pr-20">
+  //               <div className="grid grid-cols-3 grid-flow-row-dense gap-2 w-full">
+  //                 <div className="flex justify-end text-lg font-semibold shrink-0">Display Name</div>
+  //                 <input className="w-full bg-deep-purple-500 p-2 focus:outline-none col-span-2" defaultValue={displayName!} onChange={handleDisplayNameInputChange}/>
+  //                 <div className="flex justify-end text-lg font-semibold shrink-0">Description</div>
+  //                 <input className="w-full bg-deep-purple-500 p-2 focus:outline-none col-span-2" defaultValue={description!} onChange={handleDescriptionInputChange}/>
+  //                 <div className="flex justify-end text-lg font-semibold shrink-0">Image Link</div>
+  //                 <input className="w-full bg-deep-purple-500 p-2 focus:outline-none col-span-2" defaultValue={picture!} onChange={handlePictureInputChange}/>
+  //               </div>
+  //               <UserInfoLarge address={push.user!.account} displayName={displayName!} description={description!} picture={picture!}/>
+  //             </div>
+  //             <div className="flex justify-center w-full py-3">
+  //               <button className="flex justify-center place-items-center h-12 w-32 p-1 rounded bg-deep-purple-100 text-deep-purple-400 font-semibold" onClick={updateUserInfo}>
+  //                 {loading ? <img className="animate-spin" src={loader} height={30} width={30}/> : <div>Save Changes</div>}
+  //               </button>
+  //             </div>
+  //           </DialogPanel>
+  //         </div>
+  //       </Dialog>
+  //     </>
+  //   )
+  // }
 
   function InviteUserModal(){
-    const inviteLink = `http://localhost:5173/invite/${props.serverId}`
+    const inviteLink = `http://localhost:5173/invite/${serverId}`
     return(
       <>
         <Dialog open={showInviteUserModal} onClose={() => {setShowInviteUserModal(false)}} className="relative z-50 text-deep-purple-100 select-none">
@@ -1201,21 +700,26 @@ function SideBar(props: {serverId: string, stream: PushStream}){
     )
   }
 
-  const userAddress = push.user!.account.toLowerCase()
+  // const userAddress = push.user!.account.toLowerCase()
 
   function ServerMenu(){
     const menuRef = useRef(null)
-    outsideMenuAlerter(menuRef)
+    outsideMenuAlerter(menuRef, serverNameButtonRef)
 
-    function outsideMenuAlerter(ref: React.MutableRefObject<any>) {
+    function outsideMenuAlerter(menuRef: React.MutableRefObject<any>, serverNameButtonRef:React.MutableRefObject<any>) {
       useEffect(() => {
         /**
          * Alert if clicked on outside of element
          */
         function handleClickOutside(event: MouseEvent) {
-          if (!ref.current.contains(event.target)) {
-            setShowServerMenu(false)
+          if(!serverNameButtonRef.current.contains(event.target)){
+            if (!menuRef.current.contains(event.target)) {
+              setShowServerMenu(false)
+            }
           }
+          // if (!menuRef.current.contains(event.target)) {
+          //   setShowServerMenu(false)
+          // }
         }
         // Bind the event listener
         document.addEventListener("mousedown", handleClickOutside);
@@ -1223,7 +727,7 @@ function SideBar(props: {serverId: string, stream: PushStream}){
           // Unbind the event listener on clean up
           document.removeEventListener("mousedown", handleClickOutside);
         };
-      }, [ref]);
+      }, [menuRef, serverNameButtonRef]);
     }
 
 
@@ -1239,20 +743,33 @@ function SideBar(props: {serverId: string, stream: PushStream}){
     }
   }
 
+  // const callStream = useCallStore((call) => call.stream)
+  console.log("callStream.meta.initiator.address: ", callStream.meta.initiator.address)
+  console.log("stream.incoming[0].stream: ", callStream.incoming[0].stream) 
+
+  const audioStreams = callStream.incoming.map((stream) => {})
+
   return(
     <>
       {/* <div key={props.serverId} className="w-56 bg-off-black-600 border-r-2 border-deep-purple-300 shrink-0"> */}
-      <div key={props.serverId} className="w-56 bg-off-black-600 border-r-1 border-off-black-400 shrink-0">
+      <div key={serverId} className="w-56 bg-off-black-600 border-r-1 border-off-black-400 shrink-0">
         {/* <div className="flex h-14 border-b-2 border-deep-purple-300 place-items-center pl-2"> */}
         <div className="relative">
-          <button className="flex justify-between w-full h-14 z-10 border-b border-off-black-700 place-items-center px-2 shadow-md shadow-off-black-700 text-xl font-light" onClick={() => setShowServerMenu(!showServerMenu)}>
+          <button
+            ref={serverNameButtonRef}
+            className="flex justify-between w-full h-14 z-10 border-b border-off-black-700 place-items-center px-2 shadow-md shadow-off-black-700 text-xl font-light"
+            onClick={() => setShowServerMenu(!showServerMenu)}>
             {serverName}
-            <img src={carrot} width={35} height={35} />
+            {
+              showServerMenu ?
+              <img src={close} width={35} height={35} /> :
+              <img src={carrot} width={35} height={35} />
+            }
           </button>
           <ServerMenu/>
           <InviteUserModal/>
         </div>
-        <div className="flex flex-col gap-5 overflow-y-auto py-5">
+        <div key={serverId} className="flex flex-col gap-5 overflow-y-auto py-5">
           <div className="flex flex-col gap-1">
             <div className="px-1 flex flex-row place-items-center justify-between group pointer-events-none">
               <div className="flex place-items-center">
@@ -1270,8 +787,8 @@ function SideBar(props: {serverId: string, stream: PushStream}){
             </div>
             { showTextChannels ?
             // <div>{chatChannelItems}</div> : <div/>
-            // <div>{chatChannelItems}</div> : <ChatChannelButton name={currentChatChannel.name} chatId={currentChatChannel.chatId}/>
-            <div>{textChannelItems}</div> : <ChatChannelButton name={currentChatChannel.name} chatId={currentChatChannel.chatId}/>
+            // <div>{chatChannelItems}</div> : <ChatChannelButton name={currentTextChannel.name} chatId={currentTextChannel.chatId}/>
+            <div>{textChannelItems}</div> : <ChatChannelButton name={currentTextChannel.name} chatId={currentTextChannel.chatId} unread={currentTextChannel.unread}/>
             }
           </div>
           {/* <VoiceChannelButton name={'voice_test'} /> */}
@@ -1294,10 +811,10 @@ function SideBar(props: {serverId: string, stream: PushStream}){
             <div>{voiceChannelItems}</div> : <div/>
             }
           </div>
-          {stream.meta.initiator.address != null ? <AudioPlayer stream={stream.local.stream} isMuted={false} user={stream.local.address}/> : <div/>}
-          {incomingAudioUsers}
-          {/* <VideoModal/> */}
-          {/* <button onClick={() => setOpenVideo(true)}> open video </button> */}
+          {/* {callStream.meta.initiator.address != null ? <AudioPlayer stream={callStream.local.stream} isMuted={false} user={callStream.local.address}/> : <div/>} */}
+          {/* {incomingAudioUsers} */}
+          <VideoModal/>
+          <button onClick={() => setOpenVideo(true)}> open video </button>
         </div>
         <AddChannelModal/>
         {/* <div className="absolute bottom-2 pointer-events-none select-none">
@@ -1328,11 +845,12 @@ function SideBar(props: {serverId: string, stream: PushStream}){
   )
 }
 
-function VoiceChannelButton(props: {name: string, chatId: string, stream: PushStream}){
+// function VoiceChannelButton(props: {name: string, chatId: string, stream: PushStream}){
+function VoiceChannelButton(props: {name: string, chatId: string}){
   // state to handle current video call data
   // const [users, setUsers] = useState<Array<any>>()
   // const [data, setData] = useState(CONSTANTS.VIDEO.INITIAL_DATA);
-  const currentChatChannel = useServerStore((state) => state.currentChatChannel)
+  const currentTextChannel = useServerStore((state) => state.currentTextChannel)
   const serverId = useServerStore((state) => state.serverId)
   // const videoStreamData = useServerStore((state) => state.videoStreamData)
   // const stream = useCallStore((call) => call.stream)
@@ -1341,69 +859,163 @@ function VoiceChannelButton(props: {name: string, chatId: string, stream: PushSt
   const addUser = useCallStore((call) => call.addUser)
   const setInitiator = useCallStore((call) => call.setInitiator)
   const setCurrentVoiceChannel = useServerStore((server) => server.setCurrentVoiceChannel)
-  const stream = useCallStore((call) => call.stream)
+  const callStream = useCallStore((call) => call.stream)
   const setCall = useCallStore((call) => call.setCall)
-  const setStream = useCallStore((call) => call.setStream)
-  const [videoData, setVideoData] = useState<TYPES.VIDEO.DATA>(CONSTANTS.VIDEO.INITIAL_DATA);
+  const setCallStream = useCallStore((call) => call.setStream)
+  const stream = useServerStore((server) => server.stream)
+  // const [videoData, setVideoData] = useState<TYPES.VIDEO.DATA>(CONSTANTS.VIDEO.INITIAL_DATA);
+
+  const [videoData, setVideoData] = useState<VideoCallData>(initVideoCallData);
   
-    videoData?.incoming.map((peerData: PeerData) => {
+  // wrap in use effect?
+    videoData.incoming.map((peerData: PeerData) => {
       if(peerData.status === CONSTANTS.VIDEO.STATUS.INITIALIZED){
-        // console.log('set call stream 1:::' + JSON.stringify(videoData))
+        console.log('VIDEO DATA STATUS INITIALIZED: ', videoData)
         const currentVoiceChannel = useServerStore.getState().currentVoiceChannel
-        console.log("INCOMING INITIALIZED!!!! " + currentVoiceChannel)
+        // console.log("INCOMING INITIALIZED!!!! " + currentVoiceChannel)
+        
         const rules: VideoNotificationRules = {
-        access: {
-          type: VIDEO_NOTIFICATION_ACCESS_TYPE.PUSH_CHAT,
-          data: {
-            chatId: currentVoiceChannel
+          access: {
+            type: VIDEO_NOTIFICATION_ACCESS_TYPE.PUSH_CHAT,
+            data: {
+              chatId: currentVoiceChannel
+            },
           },
-        },
-      }
-        const meta = {rules: rules}
+        }
+        // const meta = {rules: rules}
+        console.log("SINGAL DATA IN PEERINFO: ", videoData.meta.initiator.signal)
         const peerInfo: VideoPeerInfo = {
           address: videoData.meta.initiator.address,
           signal: videoData.meta.initiator.signal,
-          meta: meta
+          meta: {rules: rules}
         }
-
-        gun.get('cliqu3-servers-test-db-3').get(serverId).get('voiceChannels').on((voiceChannels, key) => {
-          console.log('Voice Channels:', key, voiceChannels);
-          // setServerList([...serverList, server])
-          // setServerList((serverList: Array<any>) => [...serverList, server]);
-          JSON.parse(voiceChannels).map((voiceChannel: VoiceChannel) => {
-            if(voiceChannel.chatId == props.chatId){
-              // console.log("FOUND INFO " + voiceChannel.peerInfo)
-              console.log("UPDATE PEER INFO")
-              updatePeerInfo(serverId, currentVoiceChannel, JSON.stringify(peerInfo))
-            }
-          });
-        })
-    
-        // const doc = rxdb.servers!.findOne().where('id').eq(props.serverId).where('voiceChannel').eq('chatId').eq(currentVoiceChannel).exec()
-        // rxdb.servers!.findOne({
-        //   selector: {
-        //     id: {
-        //       $eq: serverId
+  
+        // gun.get('cliqu3-servers-test-db-3').get(serverId).get('voiceChannels').once((voiceChannelsJson: string) => {
+        //   // seems like the voice channel peerInfo is not updating...
+        //   console.log('Voice Channels 1:', voiceChannelsJson);
+        //   // setServerList([...serverList, server])
+        //   // setServerList((serverList: Array<any>) => [...serverList, server]);
+        //   JSON.parse(voiceChannelsJson).map(async (voiceChannel: VoiceChannel) => {
+        //     // console.log('Voice Channel 1234567: ', voiceChannel);
+        //     if(voiceChannel.chatId == props.chatId){
+        //       // console.log("FOUND INFO " + voiceChannel.peerInfo)
+        //       // console.log("UPDATE PEER INFO")
+        //       // updatePeerInfo(serverId, currentVoiceChannel, JSON.stringify(peerInfo))
+        //       // console.log("SERVER ID: ", serverId)
+        //       console.log("CURRENT VOICE CHANNEL ID: ", currentVoiceChannel)
+        //       console.log("Signal here: ", peerInfo.signal)
+        //       await updatePeerInfo(serverId, currentVoiceChannel, peerInfo)
         //     }
-        //   }
-        // }).exec().then((doc: RxDocument) => {
-        //   doc.update({
-        //     $set: {
-        //       'voiceChannels.$[x].peerInfo': JSON.stringify(peerInfo),
-        //       filter: [{"x.chatId": currentVoiceChannel}]
-        //     },
-        //   }).then((newDoc: any) => {
-        //     console.log("DOC UPDATED")
-        //   })
+        //   });
         // })
       }
-
       if(peerData.status === CONSTANTS.VIDEO.STATUS.CONNECTED){
-          console.log('set call stream 2')
-          console.log("VIDEO DATA CONNECTED: " + JSON.stringify(videoData))
-          setStream(videoData)
+        console.log('set call stream 2')
+        console.log("VIDEO DATA CONNECTED: " + JSON.stringify(videoData))
       }
     })
+
+
+    useEffect(() => {
+    if (videoData.incoming[0].status === VideoCallStatus.CONNECTED) {
+      console.log("CALL CONNECTED in USE EFFECT!")
+      // setIsCallConnected(true);
+      // setIsCallAccepted(false);
+    }
+    return () => {
+      // setIsCallConnected(false);
+      // setIsCallAccepted(false);
+    };
+  }, [videoData.incoming[0].status]);
+
+    setCallStream(videoData)
+    // videoData?.incoming.map((peerData: PeerData) => {
+    //   if(peerData.status === CONSTANTS.VIDEO.STATUS.INITIALIZED){
+    //     console.log('VIDEO DATA:', videoData)
+    //     const currentVoiceChannel = useServerStore.getState().currentVoiceChannel
+    //     console.log("INCOMING INITIALIZED!!!! " + currentVoiceChannel)
+        
+    //     const rules: VideoNotificationRules = {
+    //       access: {
+    //         type: VIDEO_NOTIFICATION_ACCESS_TYPE.PUSH_CHAT,
+    //         data: {
+    //           chatId: currentVoiceChannel
+    //         },
+    //       },
+    //     }
+    //     const meta = {rules: rules}
+    //     const peerInfo: VideoPeerInfo = {
+    //       address: videoData.meta.initiator.address,
+    //       signal: videoData.meta.initiator.signal,
+    //       meta: meta
+    //     }
+  
+    //     gun.get('cliqu3-servers-test-db-3').get(serverId).get('voiceChannels').once((voiceChannels, key) => {
+    //       // seems like the voice channel peerInfo is not updating...
+    //       console.log('Voice Channels:', key, voiceChannels);
+    //       // setServerList([...serverList, server])
+    //       // setServerList((serverList: Array<any>) => [...serverList, server]);
+    //       JSON.parse(voiceChannels).map(async (voiceChannel: VoiceChannel) => {
+    //         if(voiceChannel.chatId == props.chatId){
+    //           // console.log("FOUND INFO " + voiceChannel.peerInfo)
+    //           console.log("UPDATE PEER INFO")
+    //           // updatePeerInfo(serverId, currentVoiceChannel, JSON.stringify(peerInfo))
+    //           await updatePeerInfo(serverId, currentVoiceChannel, peerInfo)
+    //         }
+    //       });
+    //     })
+    //   }
+    //   if(peerData.status === CONSTANTS.VIDEO.STATUS.CONNECTED){
+    //     console.log('set call stream 2')
+    //     console.log("VIDEO DATA CONNECTED: " + JSON.stringify(videoData))
+    //     setCallStream(videoData)
+    //   }
+    // })
+  // videoData?.incoming.map((peerData: PeerData) => {
+  //   if(peerData.status === CONSTANTS.VIDEO.STATUS.INITIALIZED){
+  //     console.log('VIDEO DATA:', videoData)
+  //     const currentVoiceChannel = useServerStore.getState().currentVoiceChannel
+  //     console.log("INCOMING INITIALIZED!!!! " + currentVoiceChannel)
+      
+  //     const rules: VideoNotificationRules = {
+  //       access: {
+  //         type: VIDEO_NOTIFICATION_ACCESS_TYPE.PUSH_CHAT,
+  //         data: {
+  //           chatId: currentVoiceChannel
+  //         },
+  //       },
+  //     }
+  //     const meta = {rules: rules}
+  //     const peerInfo: VideoPeerInfo = {
+  //       address: videoData.meta.initiator.address,
+  //       signal: videoData.meta.initiator.signal,
+  //       meta: meta
+  //     }
+
+  //     gun.get('cliqu3-servers-test-db-3').get(serverId).get('voiceChannels').once((voiceChannels, key) => {
+  //       // seems like the voice channel peerInfo is not updating...
+  //       console.log('Voice Channels:', key, voiceChannels);
+  //       // setServerList([...serverList, server])
+  //       // setServerList((serverList: Array<any>) => [...serverList, server]);
+  //       JSON.parse(voiceChannels).map(async (voiceChannel: VoiceChannel) => {
+  //         if(voiceChannel.chatId == props.chatId){
+  //           // console.log("FOUND INFO " + voiceChannel.peerInfo)
+  //           console.log("UPDATE PEER INFO")
+  //           // updatePeerInfo(serverId, currentVoiceChannel, JSON.stringify(peerInfo))
+  //           await updatePeerInfo(serverId, currentVoiceChannel, peerInfo)
+  //         }
+  //       });
+  //     })
+  //   }
+
+  //   if(peerData.status === CONSTANTS.VIDEO.STATUS.CONNECTED){
+  //       console.log('set call stream 2')
+  //       console.log("VIDEO DATA CONNECTED: " + JSON.stringify(videoData))
+  //       setCallStream(videoData)
+  //   }
+  // })
+
+
   // if(videoData?.incoming[0]?.status === CONSTANTS.VIDEO.STATUS.CONNECTED){
   //   console.log('set call stream 2')
   //   console.log("VIDEO DATA CONNECTED: " + JSON.stringify(videoData))
@@ -1411,7 +1023,14 @@ function VoiceChannelButton(props: {name: string, chatId: string, stream: PushSt
   // }
 
   async function joinCall(){
+    console.log("JOIN CALL BUTTON")
+    // console.log("SERVER ID: ", serverId)
+    // console.log("CURRENT VOICE CHANNEL ID: ", props.chatId)
     setCurrentVoiceChannel(props.chatId)
+        // const r = await push.user?.chat.group.info(props.chatId)
+    // console.log("R: ", r)
+    // const response = await push.user?.chat.accept('d26c6365ff5a8a1656370a8e3a8db5e7aa460777ccd2595a66c73943af2c2780')
+    // console.log("ACCEPTED: d26c6365ff5a8a1656370a8e3a8db5e7aa460777ccd2595a66c73943af2c2780", response)
     // const addToGroup = await push.user!.chat.group.add('006d8396c569e64aeab44b42c5ad4c53109b3a1068587f5c10fa5ffd38547766', {
     //   role: 'MEMBER', // 'ADMIN' or 'MEMBER'
     //   accounts: ['0xF06863EaD6A1c82Eb976E2b8E5754a5e15b3C46D'],
@@ -1420,17 +1039,39 @@ function VoiceChannelButton(props: {name: string, chatId: string, stream: PushSt
     // console.log('ADD TO GROUP: ' + JSON.stringify(join))
     // await push.user!.chat.group.join('54776f362792a36b5099cc2a8ff428432536332b2a12f46b3642eff0cc7ab377')
     // await push.user!.chat.group.info('006d8396c569e64aeab44b42c5ad4c53109b3a1068587f5c10fa5ffd38547766')
-    const callInit = await push.user!.video.initialize(setVideoData, {
-      stream: props.stream, // pass the stream object, refer Stream Video
+    // let stream = useServerStore((server) => server.stream)
+    // const stream = useServerStore.getState().stream;
+    // console.log("THIS IS THE STREAM!: ", stream)
+
+    
+    const callInit = await push.user!.video.initialize(setVideoData, {  
+      stream: stream!, // pass the stream object, refer Stream Video
       config: {
-        // video: true, // to enable video on start, for frontend use
+        video: true, // to enable video on start, for frontend use
         audio: true, // to enable audio on start, for frontend use
       },
       // media?: MediaStream, // to pass your existing media stream(for backend use)
     });
 
-    setCall(callInit)
-    let peerInfo = ''
+    if(stream == undefined){
+      console.log("STREAM IS UNDFINED! Try again....", stream)
+    }else{
+      // console.log("CALL INIT: ", stream)
+      // const callInit = await push.user!.video.initialize(setVideoData, {
+      //   stream: stream, // pass the stream object, refer Stream Video
+      //   config: {
+      //     video: true, // to enable video on start, for frontend use
+      //     audio: true, // to enable audio on start, for frontend use
+      //   },
+      //   // media?: MediaStream, // to pass your existing media stream(for backend use)
+      // });
+      // console.log(callInit)
+      setCall(callInit)
+      // let peerInfo = ''
+    }
+
+    // setCall(callInit)
+    // let peerInfo = null
     // const doc =  await rxdb.servers!.findOne({
     //   selector: {
     //     id: {
@@ -1439,18 +1080,142 @@ function VoiceChannelButton(props: {name: string, chatId: string, stream: PushSt
     //   }
     // }).exec()
 
-    gun.get('cliqu3-servers-test-db-3').get(serverId).get('voiceChannels').on((voiceChannels, key) => {
-      console.log('Voice Channels:', key, voiceChannels);
-      // setServerList([...serverList, server])
-      // setServerList((serverList: Array<any>) => [...serverList, server]);
-      JSON.parse(voiceChannels).map((voiceChannel: VoiceChannel) => {
-        if(voiceChannel.chatId == props.chatId){
-          // console.log("FOUND INFO " + voiceChannel.peerInfo)
-          console.log("FOUND PEER INFO")
-          peerInfo = voiceChannel.peerInfo
-        }
-      });
-    })
+    // console.log("VOICE CHANNEL CHAT ID: ", props.chatId)
+      gun.get('cliqu3-servers-test-db-3').get(serverId).get('voiceChannels').once((voiceChannelsJson: string) => {
+        // console.log('Voice Channels 2: ', voiceChannelsJson);
+        // setServerList([...serverList, server])
+        // setServerList((serverList: Array<any>) => [...serverList, server]);
+        JSON.parse(voiceChannelsJson).map((voiceChannel: VoiceChannel) => {
+          if(voiceChannel.chatId == props.chatId){
+            console.log("PEER INFO BEFORE JOIN OR REQUEST: ", voiceChannel.peerInfo)
+            // console.log("FOUND INFO " + voiceChannel.peerInfo)
+            // console.log("FOUND PEER INFO")
+            // peerInfo = voiceChannel.peerInfo
+            // const call = useCallStore.getState().call
+            // const currentVoiceChannel = useServerStore.getState().currentVoiceChannel
+            // console.log("CALL STORE CALL: ", call)
+            // const stream = useCallStore.getState().stream
+            if(voiceChannel.peerInfo == null){
+              // if(peerInfo == null){
+              // console.log("STREAM: " + stream)
+              // userAlice.video.initialize(onChange, {options?});
+              // const call = await push.user!.video.initialize(setData, {
+              //   stream: props.stream, // pass the stream object, refer Stream Video
+              //   config: {
+              //     video: false, // to enable video on start, for frontend use
+              //     audio: true, // to enable audio on start, for frontend use
+              //   },
+              //   // media?: MediaStream, // to pass your existing media stream(for backend use)
+              // });
+
+              // console.log("CALL CONFIG: " + call!.config)
+
+              // push.user!.chat.send('0xDEC4399dDb5655237Ee0cCBEe1B79273FDD3B465', {
+              //   type: 'Text',
+              //   content: 'Hello Test!',
+              // });
+              // VIDEO_NOTIFICATION_ACCESS_TYPE
+              
+              // console.log("CURRENT VOICE CHANNEL: " + currentVoiceChannel)
+              
+              const rules: VideoNotificationRules = {
+                access: {
+                  type: VIDEO_NOTIFICATION_ACCESS_TYPE.PUSH_CHAT,
+                  data: {
+                    // chatId: currentTextChannel.chatId,
+                    chatId: props.chatId
+                    // chatId: currentVoiceChannel
+                  },
+                },
+              }
+
+              // const signer = ethers.Wallet.fromMnemonic("stadium chase abuse leg monitor uncle pledge category flip luxury antenna extra", "m/44'/60'/0'/0/0")
+              // console.log("init user: " + JSON.stringify(signer.mnemonic))
+              // const otherUser = await PushAPI.initialize(signer, {
+              //   env: CONSTANTS.ENV.DEV,
+              // });
+
+              // console.log('OTHER USER: 0xDEC4399dDb5655237Ee0cCBEe1B79273FDD3B465')
+              console.log("CALLING USER 3: 0xf06863ead6a1c82eb976e2b8e5754a5e15b3c46d")
+
+              callInit.request(['0xF06863EaD6A1c82Eb976E2b8E5754a5e15b3C46D'], {rules}).then(() => {
+                console.log("THEN CALL REQUEST!")
+                setInitiator(true)
+                addUser(push.user!.account)
+              })
+
+              // call!.request(['0xF06863EaD6A1c82Eb976E2b8E5754a5e15b3C46D'], {rules}).then(() => {
+              //   console.log("THEN CALL REQUEST!")
+              //   setInitiator(true)
+              //   addUser(push.user!.account)
+              // });
+
+              // call!.request(['0xF06863EaD6A1c82Eb976E2b8E5754a5e15b3C46D'], {rules})
+
+              // console.log("CALLING USER 3 REQUESTED")
+              // setInitiator(true)
+              // addUser(push.user!.account)
+
+              // call!.request(['0xF06863EaD6A1c82Eb976E2b8E5754a5e15b3C46D'], {rules}).then(() => {
+              //   console.log("CALLING USER 3 REQUEST")
+              //   setInitiator(true)
+              //   addUser(push.user!.account)
+              // });
+
+              // call!.request(['0xDEC4399dDb5655237Ee0cCBEe1B79273FDD3B465', '0xF06863EaD6A1c82Eb976E2b8E5754a5e15b3C46D'], {rules});
+
+              // await call.request(['0xDEC4399dDb5655237Ee0cCBEe1B79273FDD3B465', '0x99A08ac6254dcf7ccc37CeC662aeba8eFA666666'], {rules: {VideoNotificationRules.access: {data: {chatId: currentTextChannel.chatId }}}});
+              // console.log("CALL : " + call!.config)
+              // setInitiator(true)
+              // console.log("LOCAL ADDRES:::: " + JSON.stringify(stream))
+              // addUser(push.user!.account)
+              // await call.approve();
+              
+              // await call.approve(push.user!.account);
+            }else{
+              console.log("JOINING CALL!")
+              // call!.approve(peerInfo!)
+              // const info = JSON.parse(peerInfo)
+              // const videoPeerInfo: VideoPeerInfo = {
+              //   // address: info.address,
+              //   // signal: info.signal,
+              //   // meta: info.meta
+              //   address: peerInfo!.address,
+              //   signal: peerInfo!.signal,
+              //   meta: peerInfo!.meta
+              // }
+              // console.log("INFO: " + info)
+              // console.log("STRING INFO:: " + JSON.stringify(videoPeerInfo))
+              // call!.approve(peerInfo)
+
+              // call!.approve(voiceChannel.peerInfo)
+              // await call!.approve('0x6cbc0af4e8b1022afab474a68fdabad670bd452d')
+
+              // const call = await push.user!.video.initialize(setVideoData, {
+              //   stream: stream, // pass the stream object, refer Stream Video
+              //   config: {
+              //     video: true, // to enable video on start, for frontend use
+              //     audio: true, // to enable audio on start, for frontend use
+              //   },
+              //   // media?: MediaStream, // to pass your existing media stream(for backend use)
+              // });
+              
+              // call!.approve('0x6cbc0af4e8b1022afab474a68fdabad670bd452d').then(() => {
+              //   console.log("APROVED CALL!")
+              //   // videoData.
+              // })
+              
+              console.log("CALL INIT BEFORE APPROVE: ", callInit)
+              // callInit.approve('0x6cbC0AF4e8b1022aFaB474A68FdAbaD670BD452D').then(() => {
+              //   console.log("THEN CALL APPROVE!")
+              // })
+            }
+            
+          }else{
+            console.log("DIDNT FIND INFO")
+          }
+        });
+      })
 
     
     // doc.get('voiceChannels').map((voiceChannel: any) => {
@@ -1462,73 +1227,6 @@ function VoiceChannelButton(props: {name: string, chatId: string, stream: PushSt
     // })
 
     // const peerInfo = useCallStore.getState().peerInfo
-    const call = useCallStore.getState().call
-    const currentVoiceChannel = useServerStore.getState().currentVoiceChannel
-    // const stream = useCallStore.getState().stream
-    if(peerInfo == ''){
-    // if(peerInfo == null){
-      // console.log("STREAM: " + stream)
-      // userAlice.video.initialize(onChange, {options?});
-      // const call = await push.user!.video.initialize(setData, {
-      //   stream: props.stream, // pass the stream object, refer Stream Video
-      //   config: {
-      //     video: false, // to enable video on start, for frontend use
-      //     audio: true, // to enable audio on start, for frontend use
-      //   },
-      //   // media?: MediaStream, // to pass your existing media stream(for backend use)
-      // });
-
-      console.log("CALL CONFIG: " + call!.config)
-
-      // push.user!.chat.send('0xDEC4399dDb5655237Ee0cCBEe1B79273FDD3B465', {
-      //   type: 'Text',
-      //   content: 'Hello Test!',
-      // });
-      // VIDEO_NOTIFICATION_ACCESS_TYPE
-      
-      console.log("CURRENT VOICE CHANNEL: " + currentVoiceChannel)
-      const rules: VideoNotificationRules = {
-        access: {
-          type: VIDEO_NOTIFICATION_ACCESS_TYPE.PUSH_CHAT,
-          data: {
-            // chatId: currentChatChannel.chatId,
-            // chatId: 'c77b6723d5b72ed3238b957d826b3f8a2f86440027aa88e977e7243ea1b624ed'
-            chatId: currentVoiceChannel
-          },
-        },
-      }
-
-      // const signer = ethers.Wallet.fromMnemonic("stadium chase abuse leg monitor uncle pledge category flip luxury antenna extra", "m/44'/60'/0'/0/0")
-      // console.log("init user: " + JSON.stringify(signer.mnemonic))
-      // const otherUser = await PushAPI.initialize(signer, {
-      //   env: CONSTANTS.ENV.DEV,
-      // });
-
-      console.log('OTHER USER: 0xDEC4399dDb5655237Ee0cCBEe1B79273FDD3B465')
-
-      await call!.request(['0xDEC4399dDb5655237Ee0cCBEe1B79273FDD3B465', '0xF06863EaD6A1c82Eb976E2b8E5754a5e15b3C46D'], {rules});
-
-      // await call.request(['0xDEC4399dDb5655237Ee0cCBEe1B79273FDD3B465', '0x99A08ac6254dcf7ccc37CeC662aeba8eFA666666'], {rules: {VideoNotificationRules.access: {data: {chatId: currentChatChannel.chatId }}}});
-      // console.log("CALL : " + call!.config)
-      setInitiator(true)
-      // console.log("LOCAL ADDRES:::: " + JSON.stringify(stream))
-      addUser(push.user!.account)
-      // await call.approve();
-      
-      // await call.approve(push.user!.account);
-    }else{
-      console.log("JOINING CALL!")
-      // call!.approve(peerInfo!)
-      const info = JSON.parse(peerInfo)
-      const videoPeerInfo: VideoPeerInfo = {
-        address: info.address,
-        signal: info.signal,
-        meta: info.meta
-      }
-      // console.log("INFO: " + info)
-      // console.log("STRING INFO:: " + JSON.stringify(videoPeerInfo))
-      call!.approve(videoPeerInfo)
-    }
   }
 
   // let callList: any[] = []
@@ -1549,47 +1247,174 @@ function VoiceChannelButton(props: {name: string, chatId: string, stream: PushSt
   return(
     <>
       <div className="w-full border-deep-purple-300 overflow-y-auto px-2">
-        <button className="flex w-full h-8 place-items-center p-1 hover:bg-deep-purple-300 rounded" onClick={ async () => joinCall()}>
+        <button className="flex w-full h-8 place-items-center p-1 hover:bg-off-black-400 rounded-lg" onClick={joinCall}>
           <div className="flex flex-row gap-2 overflow-hidden place-items-center">
             <img src={volume} height={20} width={20}/>
             <p className="truncate">{props.name}</p>
+            {/* <audio /> */}
           </div>
         </button>
       </div>
       {/* <div>{usersInCall}</div> */}
-      {/* <UsersInCall/> */}
+      <UsersInCall/>
+    </>
+  )
+}
+
+
+
+//New Testing Video
+function NewVoiceChannelButton(props: {name: string, chatId: string}){
+  // const setCall = useCallStore((call) => call.setCall)
+  // const callStream = useCallStore((call) => call.stream)
+  const setCallStream = useCallStore((call) => call.setStream)
+  const stream = useServerStore((server) => server.stream)
+  const [videoData, setVideoData] = useState<TYPES.VIDEO.DATA>(CONSTANTS.VIDEO.INITIAL_DATA);
+
+  const rules: VideoNotificationRules = {
+    access: {
+      type: VIDEO_NOTIFICATION_ACCESS_TYPE.PUSH_CHAT,
+      data: {
+        chatId: props.chatId
+      },
+    },
+  }
+  // const peerInfo: VideoPeerInfo = {
+  //   address: videoData.meta.initiator.address,
+  //   signal: videoData.meta.initiator.signal,
+  //   meta: {rules: rules}
+  // }
+
+  // const meta = {rules: rules}
+  // console.log("SINGAL DATA IN PEERINFO: ", videoData.meta.initiator.signal)
+
+  // useEffect(() => {
+  //   if (videoData.incoming[0].status === VideoCallStatus.CONNECTED) {
+  //     console.log("CALL CONNECTED in USE EFFECT!")
+  //   }
+  //   return () => {
+  //   };
+  // }, [videoData.incoming[0].status]);
+
+  useEffect(() => {
+    console.log("VIDEO DATA:", videoData)
+    setCallStream(videoData)
+  }, [videoData])
+
+  async function joinCall(){
+    console.log("JOIN CALL BUTTON")
+    // setCurrentVoiceChannel(props.chatId)
+
+    if(stream == undefined){
+      console.log("STREAM IS UNDFINED! Try again....", stream)
+    }else{
+      console.log("CALL INIT: ", stream)
+      const callInit = await push.user!.video.initialize(setVideoData, {
+        stream: stream!, // pass the stream object, refer Stream Video
+        config: {
+          video: true, // to enable video on start, for frontend use
+          audio: true, // to enable audio on start, for frontend use
+        },
+        // media?: MediaStream, // to pass your existing media stream(for backend use)
+      });
+
+      // setCall(callInit)
+
+      console.log("STARTING / JOINING CALL: ", push.user!.account)
+
+      if(push.user!.account != '0xF06863EaD6A1c82Eb976E2b8E5754a5e15b3C46D'){
+        // const temp: any = stream
+        // console.log("STARTING CALL!!!!:", temp.signer)
+        // callInit.request(['0xF06863EaD6A1c82Eb976E2b8E5754a5e15b3C46D'], {rules}).then(() => {
+        //   console.log("THEN CALL REQUEST!")
+        // })
+        // callInit.request(['0xF06863EaD6A1c82Eb976E2b8E5754a5e15b3C46D']).then(() => {
+        //   console.log("THEN CALL REQUEST!")
+        // })
+        // console.log("CALL INIT 1: ", callInit)
+        await callInit.request(['0xF06863EaD6A1c82Eb976E2b8E5754a5e15b3C46D'], {rules})
+        // console.log("VIDEO DATA 1:", videoData)
+        // callInit.op
+      }else{
+        // const temp: any = stream
+        // console.log("JOINING CALL!!!!:", temp.signer)
+        // console.log("VIDEO DATA: ", videoData.incoming[0].)
+        // console.log("CALL INIT 2:", callInit)
+        // console.log("VIDEO DATA 2:", videoData)
+        // console.log("CALL INIT: ", callInit)
+        await callInit.approve('0x6cbC0AF4e8b1022aFaB474A68FdAbaD670BD452D');
+      }
+    }
+
+  }
+
+  // let callList: any[] = []
+  // if(initiator){
+  //   addUser(stream.local.address)
+  // }
+  // callList.push(stream.local)
+  // if(stream?.incoming[0]?.status == VideoCallStatus.CONNECTED){
+  //   callList.push.apply(callList, stream.incoming)
+  // }
+  // console.log("CALL LIST: " + JSON.stringify(callList))
+
+  // videoStreamData.local
+  // const usersInCall = videoStreamData.incoming.map((incoming: PeerData) => {return <div className="flex gap-1"><div>{incoming.address}</div><div>{incoming.audio}</div></div>})
+  // const usersInCall = callList.map((call: any) => {return <div className="flex gap-1"><div>{call.address}</div><div>{call.audio}</div></div>})
+  // const usersInCall = users.map((user: string) => {return <div>{user}</div>})
+
+  return(
+    <>
+      <div className="w-full border-deep-purple-300 overflow-y-auto px-2">
+        <button className="flex w-full h-8 place-items-center p-1 hover:bg-off-black-400 rounded-lg" onClick={joinCall}>
+          <div className="flex flex-row gap-2 overflow-hidden place-items-center">
+            <img src={volume} height={20} width={20}/>
+            <p className="truncate">{props.name}</p>
+            {/* <audio /> */}
+          </div>
+        </button>
+      </div>
+      {/* <div>{usersInCall}</div> */}
+      <UsersInCall/>
     </>
   )
 }
 
 function UsersInCall(){
-  const users = useCallStore((call) => call.users)
-  console.log("USERS IN CALL: " + JSON.stringify(users))
-  const usersInCall = users.map((user: string) => {return <div>{user}</div>})
+  const callStream = useCallStore((call) => call.stream)
+  console.log("USERS IN CALL STREAM: ", callStream)
+  const usersInCall = callStream.incoming.map((peer: PeerData) => {
+    return <AudioPlayer stream={peer.stream} isMuted={false} user={peer.address}/>
+  })
+
   return(
     <>
-      {usersInCall}
+      <div className="flex w-full truncate">
+        {/* MAYBE REMOVE LOCAL STREAM AND JUST HAVE PEERS SO YOU DONT HEAR YOUR OWN AUDIO???? */}
+        {/* <AudioPlayer stream={callStream.local.stream} isMuted={false} user={callStream.local.address}/> */}
+        {usersInCall}
+      </div>
     </>
   )
 }
 
-function ChatChannelButton(props: {name: string, chatId: string}){
+function ChatChannelButton(props: {name: string, chatId: string, unread: boolean}){
   // const currentMessages = useServerStore((server) => server.messages)
-  const currentChatChannel = useServerStore((server) => server.currentChatChannel)
+  const currentTextChannel = useServerStore((server) => server.currentTextChannel)
   const setMessages = useServerStore((server) => server.setMessages)
-  const setCurrentChatChannel = useServerStore((server) => server.setCurrentChatChannel)
+  const setCurrentTextChannel = useServerStore((server) => server.setCurrentTextChannel)
   const setUsers = useServerStore((server) => server.setUsers)
   const setUserProfiles = useServerStore((server) => server.setUserProfiles)
   const clearMessages = useServerStore((server) => server.clearMessages)
   const [active, setActive] = useState(false)
 
   useEffect(() => {
-    if(props.chatId == currentChatChannel.chatId){
+    if(props.chatId == currentTextChannel.chatId){
       setActive(true)
     }else{
       setActive(false)
     }
-  }, [props.chatId, currentChatChannel.chatId]);
+  }, [props.chatId, currentTextChannel.chatId]);
 
   // async function fetchHistory(reference: string|null = null): Promise<[Msg[], string]>{
   //   const history = await push.user!.chat.history(props.chatId, {reference: reference ,limit: 30})
@@ -1625,7 +1450,7 @@ function ChatChannelButton(props: {name: string, chatId: string}){
   //         const randomId = uuidv4();
   //         const msg: Msg = {
   //           "id": randomId, "origin": from, "timestamp": message.timestamp,
-  //           "chatId": currentChatChannel.chatId, "from": from.toLowerCase(),
+  //           "chatId": currentTextChannel.chatId, "from": from.toLowerCase(),
   //           "message": { "type": "Reply", "content": { "type": message.messageObj.content.messageType, "content": message.messageContent as string }, reference: message.messageObj.reference}, "meta": { "group": true }, "messageContent": message.messageContent,
   //           "cid": message.cid,
   //           reactions: [{
@@ -1643,7 +1468,7 @@ function ChatChannelButton(props: {name: string, chatId: string}){
   //         const randomId = uuidv4();
   //         const msg: Msg = {
   //           "id": randomId, "origin": from, "timestamp": message.timestamp,
-  //           "chatId": currentChatChannel.chatId, "from": from.toLowerCase(),
+  //           "chatId": currentTextChannel.chatId, "from": from.toLowerCase(),
   //           "message": { "type": "Reply", "content": { "type": message.messageObj.content.messageType, "content": message.messageContent as string }, reference: message.messageObj.reference}, "meta": { "group": true }, "messageContent": message.messageContent,
   //           "cid": message.cid,
   //           reactions: [{
@@ -1661,7 +1486,7 @@ function ChatChannelButton(props: {name: string, chatId: string}){
   //       const randomId = uuidv4();
   //       const msg: Msg = {
   //         "id": randomId, "origin": from, "timestamp": message.timestamp,
-  //         "chatId": currentChatChannel.chatId, "from": from.toLowerCase(),
+  //         "chatId": currentTextChannel.chatId, "from": from.toLowerCase(),
   //         "message": { "type": message.messageType, "content": message.messageContent }, "meta": { "group": true }, "messageContent": message.messageContent,
   //         "cid": message.cid,
   //         reactions: [{
@@ -1712,40 +1537,57 @@ function ChatChannelButton(props: {name: string, chatId: string}){
 
   async function getNewMessages(chatId: string){
     let count = 0
-    // let messages: Msg[] = []
-    let reference: string = ''
+    let reference: string | null = null
     let success = false
     let lastRef: string = ''
+    let cid: string | null = null
+    let lastReadCid: string = ''
+    const c = await cache2.fetchChannel(chatId);
+    console.log("CHANNEL before fetching push messages: ", c)
     while(true){
       // [messages, reference] = await fetchHistory(chatId, reference)
       // console.log("Fetching New Messages!!")
       // [success, reference] = await newFetchHistory(chatId, reference)
-      [success, reference] = await newFetchHistory(chatId, reference);
-      // if(messages.length == 0){
-      //   // new channel and no messages sent yet
-      //   break
-      // }
+      // console.log(count + ": WHILE LOOP last read cid: " + lastReadCid);
+      console.log("NEW FETCH HISTORY: chatid: " + chatId + ", reference: " + reference);
+      console.log("LAST READ CID: before fetch: ", lastReadCid);
+      [success, reference, cid] = await newFetchHistory(chatId, reference);
+      console.log("AFTER FETCH HISTORY: RESSULTS: success: " + success + ", reference: ", reference + ", cid: " + cid);
+      if(cid != null){
+        console.log("last read cid is not null: ", cid);
+        lastReadCid = cid;
+      }
       if(!success){
         // new channel and no messages sent yet
+        if(lastReadCid != ''){
+          console.log("Setting last read cid 1: ", lastReadCid);
+          cache2.updateLastReadMessageCid(chatId, lastReadCid);
+        }
         break
       }
       if(lastRef == reference){
-        console.log("CANT LOAD ANY MORE MESSAGES: " + count)
+        console.log("CANT LOAD ANY MORE MESSAGES: " + count);
+        if(lastReadCid != ''){
+          console.log("Setting last read cid 2: ", lastReadCid);
+          cache2.updateLastReadMessageCid(chatId, lastReadCid);
+        }
         break
       }else{
-        lastRef = reference
+        if(reference != null){
+          lastRef = reference
+        }
       }
-      // const currentChatChannel = useServerStore.getState().currentChatChannel
-      // if channel gets changed while loading messages
-      // if(chatId == currentChatChannel.chatId || currentChatChannel.chatId == ''){
-        // setMessages(messages)
-      // }
       if(count > 20){
+        cache2.updateLastReadMessageCid(chatId, lastReadCid)
         break
       }else{
         count += 1
       }
     }
+    // console.log("AFTER WHILE Loop")
+    // const channel = await cache2.fetchChannel(chatId)
+    // const channel = await cache2.channels.get(chatId)
+    // console.log("THIS CHANNEL AFTER: ", channel)
   }
 
   function getUsers(){
@@ -1795,32 +1637,43 @@ function ChatChannelButton(props: {name: string, chatId: string}){
 
   async function changeChannel(){
     getUsers()
-    if(currentChatChannel.chatId != props.chatId){
+    if(currentTextChannel.chatId != props.chatId){
       console.log("changing channel!")
       clearMessages()
-      setCurrentChatChannel({name: props.name, chatId: props.chatId})
+      setCurrentTextChannel({name: props.name, chatId: props.chatId, unread: props.unread})
       // const channels: Map<string, any> = await cache.channels!.findOne().where('chatId').eq(props.chatId).exec()
       // console.log("CHANNELS : " + JSON.stringify(channels))
       // setMessages(channels.get('messages'))
-      cache.fetchRecentMessages(props.chatId).then((messages: Message[])=> {
-        setMessages(messages)
-      })
+      // cache.fetchRecentMessages(props.chatId).then((messages: Message[])=> {
+      //   setMessages(messages)
+      // })
+      // cache2.fetchRecentMessages(props.chatId).then((messages: Message[])=> {
+      //   setMessages(messages)
+      // })
+      const cachedMessages = await cache2.fetchRecentMessages(props.chatId)
+      console.log("CACHED MESSAGES: ", cachedMessages)
+      setMessages(cachedMessages)
       console.log("getting new messages!!!!!")
       await getNewMessages(props.chatId)
     }
   }
-  let buttonStyle = 'flex w-full h-8 place-items-center p-0.5 mb-0.5 hover:bg-deep-purple-300 rounded'
+  let buttonStyle = 'flex w-full h-8 place-items-center p-0.5 mb-0.5 hover:bg-off-black-400 rounded-lg'
   if(active){
-    buttonStyle = 'flex w-full h-8 place-items-center p-0.5 mb-0.5 hover:bg-deep-purple-400 bg-deep-purple-300 rounded'
+    buttonStyle = 'flex w-full h-8 place-items-center p-0.5 mb-0.5 bg-deep-purple-300 rounded-lg'
   }
 
   return(
     <>
       <div className="w-full overflow-y-auto px-2">
         <button className={buttonStyle} onClick={changeChannel}>
-          <div className="flex flex-row gap-2 overflow-hidden place-items-center">
-            <img src={hashtag} height={20} width={20}/>
-            <p className="truncate">{props.name}</p>
+          <div className="flex w-full justify-between">
+            <div className="flex flex-row gap-2 overflow-hidden place-items-center">
+              <img src={hashtag} height={20} width={20}/>
+              <p className="truncate">{props.name}</p>
+            </div>
+            <div className="flex place-items-center p-2">
+              {props.unread ? <div className="flex place-items-center w-2 h-2 rounded-full bg-deep-purple-100"/> : <p/>}
+            </div>
           </div>
         </button>
       </div>
@@ -1836,13 +1689,19 @@ export function BottomBar(){
   const [showGiphy, setShowGiphy] = useState('invisible')
   const [showStickers, setShowStickers] = useState('invisible')
   const [showEmojis, setShowEmojis] = useState('invisible')
-  const currentChatChannel = useServerStore((state) => state.currentChatChannel)
+  const currentTextChannel = useServerStore((state) => state.currentTextChannel)
+  const currentDM = useDirectMessageStore(dm => dm.currentDM)
+  const currentScreen = useGlobalStore(global => global.currentScreen)
+  const profile = useUserStore((user) => user.profile)
+  const setUserProfiles = useServerStore(server => server.setUserProfiles)
   const setReply = useServerStore((server) => server.setReply)
   const setFiles = useServerStore((server) => server.setFiles)
   const appendFile = useServerStore((server) => server.appendFile)
   const files = useServerStore((server) => server.files)
   const appendMessage = useServerStore((state) => state.appendMessage)
   const addReferenceId = useServerStore((server) => server.addReferenceId)
+  const setCurrentDM = useDirectMessageStore(dm => dm.setCurrentDM)
+  const setNewMessage = useDirectMessageStore(dm => dm.setNewMessage)
   // const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   // const wrapperRef = useRef(null);
@@ -1954,7 +1813,7 @@ export function BottomBar(){
           // console.log("FILE: type:" + file.type + ", name: " + file.name, ", base64: " + file.base64.substring(0,20))
           // const msg: Msg = {
           //   "id": randomId, "origin": "self", "timestamp": Date.now(),
-          //   "chatId": currentChatChannel.chatId, "from": from.toLowerCase(),
+          //   "chatId": currentTextChannel.chatId, "from": from.toLowerCase(),
           //   "message": { "type": "File", "content": `{"content":"data:${file.type};base64,${file.base64}, "name":${file.name}}`}, "meta": { "group": true }, "messageContent": message,
           //   "cid": "",
           //   reactions: [{
@@ -1966,64 +1825,70 @@ export function BottomBar(){
           // appendMessage(msg)
 
           // console.log("FILE: type:" + file.type + ", name: " + file.name, ", base64: " + file.base64.substring(0,20))
-          const msg: Message = {
+          const message: Message = {
             id: randomId, 
             origin: "self", 
             timestamp: Date.now(),
-            chatId: currentChatChannel.chatId, 
+            chatId: currentTextChannel.chatId, 
             from: from.toLowerCase(),
-            message: { type: "File", content: `{"content":"data:${file.type};base64,${file.base64}, "name":${file.name}}`}, 
+            // message: { type: "File", content: `{"content":"data:${file.type};base64,${file.base64}, "name":${file.name}}`}, 
+            message: {
+              type: "File",
+              content: `{"content":"${file.content}", "name":${file.name}}`
+            },
             group: true,
             cid: "",
             reactions: {},
             reply: null
           }
-          appendMessage(msg)
+          appendMessage(message)
 
-          const fileReponse = await push.user!.chat.send(currentChatChannel.chatId, {
+          const fileReponse = await push.user!.chat.send(currentTextChannel.chatId, {
             type: 'File',
             // content: `{"content":"data:${file.type};base64,${file.base64}", "name":${file.name}}`,
-
+            
             // old one works below but need to update for better code to convert content into json obj
-            content: `{"content":"data:${file.type};base64,${file.base64}, "name":${file.name}}`,
+            // content: `{"content":"data:${file.type};base64,${file.base64}, "name":${file.name}}`,
+            // testing new below
+            content: `{"content":"${file.content}", "name":${file.name}}`,
           });
-          // console.log("FILE RESPONSE: " + JSON.stringify(fileReponse))
+          console.log("FILE RESPONSE: ", fileReponse)
         })
         setFiles([])
       }
     }else{
-      if(reply.messageBlip != '' && reply.reference != ''){
-        console.log("SENDING A REPLY::: of this message: " + reply.messageBlip)
+      if(reply){
+        console.log("SENDING A REPLY::: of this message: " + reply.message)
 
         const message: Message = {
           id: randomId,
-          chatId: currentChatChannel.chatId,
+          chatId: currentTextChannel.chatId,
           origin: "self",
           timestamp: Date.now(),
           from: push.user?.account.toLowerCase()!,
           // type: 'Text',
-          message: { type: 'Reply', content: { type: 'Text', content: input }, reference: reply.reference },
+          message: { type: 'Reply', content: { type: "Text", content: input }, reference: reply.reference },
           group: false,
           cid: "",
           // readCount: 0,
           // lastAccessed: 0,
-          reply: { messageBlip: reply.messageBlip, reference: reply.reference },
+          reply: { from: reply.from, message: reply.message, reference: reply.reference },
           reactions: {}
         }
 
 
         // appendMessage(msg)
         appendMessage(message)
-        // cache.appendMessage(currentChatChannel.chatId, message)
+        // cache.appendMessage(currentTextChannel.chatId, message)
         // setMessages
         setInput('')
-        setReply({messageBlip: '', reference: ''})
+        setReply(null)
         if(textareaRef.current != null){
           textareaRef.current.focus()
           textareaRef.current.style.height = 'auto';  // Reset height to auto
         }
 
-        const replyResponse = await push.user!.chat.send(currentChatChannel.chatId, {
+        const replyResponse = await push.user!.chat.send(currentTextChannel.chatId, {
           type: 'Reply',
           content: {
             type: 'Text', content: input
@@ -2032,14 +1897,14 @@ export function BottomBar(){
         })
 
         addReferenceId(randomId, replyResponse.cid)
-        // cache.addCid(currentChatChannel.chatId, randomId, replyResponse.cid)
+        // cache.addCid(currentTextChannel.chatId, randomId, replyResponse.cid)
       }else{
         // console.log("SENDING FROM SELF::: ")
         console.log("SENDING A normal msgggg: " + input)
         const randomId = uuidv4();
         // const msg: Msg = {
         //   "id": randomId, "origin": "self", "timestamp": Date.now(),
-        //   "chatId": currentChatChannel.chatId, "from": from.toLowerCase(),
+        //   "chatId": currentTextChannel.chatId, "from": from.toLowerCase(),
         //   "message": { "type": "Text", "content": message }, "meta": { "group": true }, "messageContent": message,
         //   "cid": "",
         //   reactions: [{
@@ -2050,7 +1915,7 @@ export function BottomBar(){
         // }
 
         const message: Message = {
-          chatId: currentChatChannel.chatId,
+          chatId: currentTextChannel.chatId,
           id: randomId,
           origin: "self",
           timestamp: Date.now(),
@@ -2070,16 +1935,40 @@ export function BottomBar(){
         // console.log("APPENDING MESSAGE: " +JSON.stringify(message))
         // console.log("messages: " + JSON.stringify(useServerStore.getState().messages))
         appendMessage(message)
-        // cache.appendMessage(currentChatChannel.chatId, message)
+        // cache.appendMessage(currentTextChannel.chatId, message)
         setInput('')
         if(textareaRef.current != null){
           textareaRef.current.focus()
           textareaRef.current.style.height = 'auto';  // Reset height to auto
         }
 
-        const cid = await push.sendMessage(input, currentChatChannel.chatId);
-        addReferenceId(randomId, cid!)
-        // cache.addCid(currentChatChannel.chatId, randomId, cid!)
+        // const cid = await push.sendMessage(input, currentTextChannel.chatId);
+        let chatId = currentTextChannel.chatId
+        if(currentScreen == 'DirectMessages'){
+          chatId = currentDM!
+          // console.log("CHAT ID FROM DIRECT MESSAGES: ", chatId)
+          let profiles: { [address: string]: UserProfile } = {}
+          profiles[push.user?.account.toLowerCase()!] = profile!
+          const recipientProfile = await push.user?.profile.info({overrideAccount: chatId})
+          profiles[chatId] = recipientProfile
+          setUserProfiles(profiles)
+        }
+
+        const msg = await push.user!.chat.send(chatId, {
+          content: input,
+          type: 'Text',
+        });
+
+        if(currentScreen == 'DirectMessages'){
+          setCurrentDM(msg.chatId!)
+          setNewMessage(false)
+        }
+
+        console.log("MESSAGE FROM SEND! ", msg)
+
+        addReferenceId(randomId, msg.cid);
+        // cache2.updateLastReadMessageCid(currentTextChannel.chatId, msg.cid);
+        // cache.addCid(currentTextChannel.chatId, randomId, cid!)
       }
     }
   }
@@ -2121,6 +2010,9 @@ export function BottomBar(){
   const { openFilePicker, filesContent, loading } = useFilePicker({
     accept: ['.txt', '.pdf'],
     readAs: "ArrayBuffer",
+    validators: [
+      new FileSizeValidator({ maxFileSize: 1 * 1024 * 1024 /* 1 MB */ }),
+    ],
     onFilesSelected: ({ plainFiles, filesContent, errors }) => {
       // this callback is always called, even if there are errors
       console.log('onFilesSelected', plainFiles, filesContent, errors);
@@ -2133,13 +2025,14 @@ export function BottomBar(){
           console.log()
           // const base64String = btoa(String.fromCharCode(...new Uint8Array(filesContent[count].content)));
           // const base64String = btoa(String.fromCharCode(...new Uint8Array(filesContent[count].content)));
-          let u8s = new Uint8Array(filesContent[count].content)
-          const base64string = Base64.fromUint8Array(u8s);
+          // let u8s = new Uint8Array(filesContent[count].content)
+          // const base64string = Base64.fromUint8Array(u8s);
           // var base64String = btoa(String.fromCharCode.apply(null, new Uint8Array(filesContent[count].content)));
           console.log("CONTENT: " + filesContent[count].content)
           console.log("CONTENT TYPE: " + typeof(filesContent[count].content))
           // console.log('BASE 64 STRING:::' + base64String)
-          filesContent[count]['base64'] = base64string
+          // filesContent[count]['base64'] = base64string
+          filesContent[count]['content'] = filesContent[count].content
           filesContent[count]['type'] = plainFiles[count].type
           // appendFile(filesContent[count])
           count += 1
@@ -2182,8 +2075,7 @@ export function BottomBar(){
   // const filesList = filesContent.map((file, index) => {return <FileItem file={file} index={index}/>})
   const filesList = files.map((file, index) => {return <FileItem key={file.file} file={file} index={index}/>})
   const emojiList = Object.values(CHAT.REACTION)
-  let emojiElements = emojiList.map((emoji: string) => <button className="hover:bg-deep-purple-400 rounded-md" onClick={()=> addEmoji(emoji)}>{emoji}</button>)
-
+  let emojiElements = emojiList.map((emoji: string) => <button key={emoji} className="hover:bg-deep-purple-400 rounded-md" onClick={()=> addEmoji(emoji)}>{emoji}</button>)
 
   return(
     <>
@@ -2200,7 +2092,7 @@ export function BottomBar(){
             <Reply/>
             {filesList.length != 0 ? <div className="absolute z-50 -top-1 -translate-y-full p-2 bg-deep-purple-300 rounded-md max-h-[500px]">{filesList}</div> : <p/>}
             {images.length != 0 ? <div className="absolute z-50 -top-1 -translate-y-full bg-deep-purple-300 rounded-md p-2 max-h-[500px]">{imageList}</div> : <p/>}
-            <textarea rows={1} ref={textareaRef} onKeyDown={handleKeyDown} className="z-0 w-full min-h-14 bg-off-black-600 rounded-lg px-2 py-4 focus:outline-none pr-56 resize-none" placeholder={`Send message to #${currentChatChannel.name}`} value={input} onChange={handleInputChange} autoFocus={true} onPaste={onPaste}/>
+            <textarea rows={1} ref={textareaRef} onKeyDown={handleKeyDown} className="z-0 w-full min-h-14 bg-off-black-600 rounded-lg px-2 py-4 focus:outline-none pr-56 resize-none" placeholder={`Send message to #${currentTextChannel.name}`} value={input} onChange={handleInputChange} autoFocus={true} onPaste={onPaste}/>
             <div className="absolute right-[calc(68px)] top-2 bg-deep-purple-300 px-2 py-1 h-10 rounded-md">
               <div className="flex place-items-center h-full w-full gap-1">
                 <button onClick={()=> setShowStickers('visible')}>
@@ -2247,7 +2139,7 @@ function AddChannelModal(){
   const [textChannel, setTextChannel] = useState(true)
 
   const serverId = useServerStore((state) => state.serverId)
-  const appendChatChannel = useServerStore((state) => state.appendChatChannel)
+  const appendTextChannel = useServerStore((state) => state.appendTextChannel)
   const appendVoiceChannel = useServerStore((state) => state.appendVoiceChannel)
   // const appendCChannel = useServerStore((state) => state.append)
 
@@ -2280,9 +2172,10 @@ function AddChannelModal(){
         if(newChatId != undefined){
           console.log("NEW CHAT ID: " + newChatId)
           if(textChannel){
-            appendChatChannel({name: channelName, chatId: newChatId})
+            appendTextChannel({name: channelName, chatId: newChatId, unread: true})
           }else{
-            appendVoiceChannel({name: channelName, chatId: newChatId, peerInfo: ''})
+            // appendVoiceChannel({name: channelName, chatId: newChatId, peerInfo: ''})
+            appendVoiceChannel({name: channelName, chatId: newChatId, peerInfo: null})
           }
         }else{
           console.log("Chat Channel Creation FAILED!")
@@ -2359,8 +2252,8 @@ function AudioPlayer(props: {stream: MediaStream | null, isMuted: boolean, user:
   return (
     <>
       <div>
-        <audio ref={audioRef} muted={props.isMuted} autoPlay/>
-        <div className="pl-10">{props.user.substring(0, 10)}</div>
+        <audio ref={audioRef} autoPlay={true} muted={props.isMuted}/>
+        <p className="pl-10 truncate line-clamp-1">{props.user}</p>
       </div>
     </>
   )

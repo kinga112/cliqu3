@@ -1,18 +1,19 @@
 import { memo, useState } from "react";
-import { Message } from "../../../cache";
+// import { Message } from "../../../cache";
 import { useServerStore } from "../../../state-management/store";
 import { Dialog, DialogPanel } from "@headlessui/react";
-import arrow from '../../../assets/icons/arrow.png'
+import carrot from '../../../assets/icons/carrot.svg'
 import pdf from '../../../assets/icons/pdf.svg'
 import { ReactionElement } from "../Server";
 import Interactions from "./Interactions";
-import LinkPreview from "../LinkPreview";
+import LinkPreview from "./LinkPreview";
 import DisplayName from "./DisplayName";
+import { Message } from "../../../types/messageTypes";
 
 // function MessageElement(props: {message: Message}){
-function MessageElement(props: {message: Message, lastMessage: Message}){  
+function MessageElement(props: {message: Message, lastMessage: Message}){
   const userProfiles = useServerStore((server) => server.userProfiles)
-
+  
   // console.log("MESSAGE stringify: " + JSON.stringify(props.message.reactions))
   if(props.message.message == undefined){
     return <div/>
@@ -44,7 +45,10 @@ function MessageElement(props: {message: Message, lastMessage: Message}){
   }
 
   let picture: string | null = null
+  // console.log("PROPS > MESSAGE:", props.message)
+  // console.log("USER PROFILE: ", userProfiles)
   if(userProfiles[props.message.from] != undefined){
+    // console.log("user: ", userProfiles[props.message.from])
     picture = userProfiles[props.message.from].picture!
   }
   
@@ -58,28 +62,59 @@ function MessageElement(props: {message: Message, lastMessage: Message}){
     imageContent = true
   }
 
-  let showReply = false
+  // let showReply = false
   let overflow = false
   let messageContent = ''
-  if(typeof(props.message.message.content) == 'string'){
+  // if(typeof(props.message.message.content) == 'string'){
+  //   messageContent = props.message.message.content
+  // }else{
+  //   console.log("PROPS.MESSAGE.MESSAGE.CONTENT: ", props.message.message.content)
+  //   messageContent = props.message.message.content.content
+  //   showReply = true
+  //   // console.log("CONTENT TYPE OF REPLY TYPE: " + message.message.content.type)
+  //   if(props.message.message.content.type == 'MediaEmbed'){
+  //     imageContent = true
+  //   }
+  //   if(props.message.reply!.messageBlip.length >= 50){
+  //     overflow = true
+  //   }
+  // }
+  // console.log("IN MESSAGE ELEMENT BEFORE ALL THIS WEIRD SHIT: ", props.message)
+
+  // if(props.message.reply){
+  //   showReply = true
+  // }
+
+  if(typeof props.message.message.content === "string"){
+    // console.log("String: ", props.message.message.content)
     messageContent = props.message.message.content
   }else{
-    console.log("PROPS.MESSAGE.MESSAGE.CONTENT: ", props.message.message.content)
+    // console.log("PROPS.MESSAGE.MESSAGE.CONTENT: ", props.message.message.content)
+    // console.log("ELSE: ", props.message.message.content)
+      // console.log("FIRST MESSAGE THINF YEAH:::", props.message.message.content)
     messageContent = props.message.message.content.content
-    showReply = true
+    if(!messageContent){
+      messageContent = ' '
+    }
+    // messageContent = props.message.message.content.messageObj
     // console.log("CONTENT TYPE OF REPLY TYPE: " + message.message.content.type)
     if(props.message.message.content.type == 'MediaEmbed'){
       imageContent = true
     }
-    if(props.message.reply!.messageBlip.length >= 50){
-      overflow = true
+    // console.log("MESSAGE REPLY: ", props.message.message)
+    if(props.message.reply!.message){
+      if(props.message.reply!.message.length >= 50){
+        overflow = true
+      }
     }
   }
 
   // console.log("MESSAGE CONTENT::::: ", messageContent)
 
   let reactions = Object.entries(props.message.reactions).map(([emoji, reaction]) => {
-    return reaction.count == 0 ? <p/> : <ReactionElement key={emoji} emoji={emoji} count={reaction.count} users={reaction.users} cid={props.message.cid} userProfiles={userProfiles}/>
+    console.log("EMOJI: ", emoji)
+    console.log("count: ", reaction.count)
+    return reaction.count == 0 ? <p/> : <ReactionElement key={emoji+reaction.count} emoji={emoji} count={reaction.count} users={reaction.users} cid={props.message.cid} userProfiles={userProfiles}/>
   });
 
   function Linkify(props: {messageContent: string}){
@@ -88,6 +123,10 @@ function MessageElement(props: {message: Message, lastMessage: Message}){
     let after = ''
     let link = ''
     let clickable = ''
+
+    if(!messageContent){
+      return
+    }
 
     const isUrl = (word: string) => {
       const urlPattern = /^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$/gm;
@@ -110,7 +149,7 @@ function MessageElement(props: {message: Message, lastMessage: Message}){
         }
       }
     }
-
+    // console.log("MESSAGE HELLOOOOOOOOOO:", props.messageContent)
     const words = props.messageContent.split(' ')
     words.map((w, i) => addMarkup(w))
 
@@ -194,7 +233,7 @@ function MessageElement(props: {message: Message, lastMessage: Message}){
                 <div>
                   <Content/>
                 </div>
-                <div className="flex gap-1">
+                <div key={props.message.cid + props.message.id} className="flex gap-1">
                   {reactions}
                 </div>
               </div>
@@ -209,7 +248,7 @@ function MessageElement(props: {message: Message, lastMessage: Message}){
             <img src={picture!} className="w-14 h-14 bg-deep-purple-100 rounded-md shrink-0 object-cover select-none pointer-events-none"/>
             <div className={"flex flex-col w-full " + (reactions.length == 0 ? "" : "gap-1")}>
               <div className="flex flex-row place-items-center gap-2">
-                <DisplayName message={props.message}/>
+                <DisplayName address={props.message.from}/>
                 <div className="text-xxs font-semibold select-none">
                   {time}
                 </div>
@@ -227,12 +266,22 @@ function MessageElement(props: {message: Message, lastMessage: Message}){
     }
   }
 
+  if(props.message.reply?.from!){
+    console.log("props.message.reply:", props.message.reply)
+    console.log("props.message.reply.from:", props.message.reply.from)
+  }
+
   return(
     <>
       <div key={props.message.id + props.message.cid} className={"flex-col place-items-start relative p-1 hover:bg-off-black-300 gap-2 group rounded ml-8 " + (shortFormat ? "" : "mt-4")}>
-        {showReply ? <div className="flex justify-center gap-2 pl-4">
-          <img className="select-none" src={arrow} height={20} width={30}/>
-          <p className="text-sm truncate max-w-full">{props.message.reply!.messageBlip}{ overflow ? '...' : ''}</p>
+        {props.message.reply ? <div className="flex justify-center gap-3 pl-4">
+          <img className="select-none" src={carrot} height={20} width={30}/>
+          {/* <p className="text-sm truncate max-w-full">{props.message.reply!.messageBlip}{ overflow ? '...' : ''}</p> */}
+          <div className="bg-off-black-100 p-2 rounded-sm gap-2">
+            {/* <p className="font-semibold">{props.message.reply!.from}</p> */}
+            {props.message.reply!.from ? <DisplayName address={props.message.reply!.from!.toLowerCase()}/> : <p/> }
+            <p className="text-sm truncate">{props.message.reply!.message}</p>
+          </div>
         </div> : <div/>}
         <MessageFormat/>
         <Interactions key={props.message.id + props.message.cid} message={props.message}/>
